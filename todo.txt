@@ -1,0 +1,330 @@
+📁 1. STRUCTURE DU PROJET
+📦 Backend
+ Créer les dossiers :
+
+controllers/, routes/, services/, middlewares/, utils/, models/, socket/
+
+ Fichier central : server.js
+
+📦 Frontend
+ Dossier src/pages/admin/ et src/pages/controller/
+
+ Dossier src/components/, src/services/, src/context/
+
+ App.jsx avec routing vers les bonnes pages
+
+🔐 2. AUTHENTIFICATION
+Backend
+ AuthController : login/signup (JWT ou session selon ton choix)
+
+ Middleware authMiddleware.js pour protéger les routes admin
+
+ Stockage Firebase des users (admin, controller)
+
+Frontend
+ Page LoginPage.jsx
+
+ AuthContext.js pour gérer l'état de connexion
+
+ Formulaire de connexion, redirection selon rôle
+
+📁 3. GESTION DES ÉVÉNEMENTS (Admin)
+Backend
+ eventController.js :
+
+Créer événement
+
+Lister les événements liés à un admin
+
+ event.js (routes)
+
+ Firebase : collection events
+
+Frontend (Admin)
+ Dashboard.jsx
+
+Formulaire pour créer un événement
+
+Liste des événements créés
+
+Bouton "upload Excel"
+
+📄 4. IMPORT INVITÉS PAR EXCEL
+Backend
+ excelParser.js :
+
+Lire le fichier Excel, extraire les noms, numéros, infos personnalisées
+
+ excelService.js :
+
+Associer les invités à un eventId
+
+Enregistrer dans Firebase
+
+ inviteController.js
+
+Route : /api/invites/upload/:eventId
+
+Frontend
+ UploadExcel.jsx (dans admin)
+
+Form pour uploader un fichier Excel
+
+Feedback (suivi d’upload)
+
+📸 5. GÉNÉRATION DE QR CODES ET CARTES
+Backend
+ qrGenerator.js :
+
+Génère un QR unique contenant : id invité + token haché + eventId
+
+ imageGenerator.js :
+
+Génére une carte avec nom + QR (via Puppeteer ou html-to-image)
+
+ generated/eventId/invite_nom.png
+
+ Téléchargement en zip ou envoi par email (optionnel)
+
+🧾 6. AFFICHAGE DES INVITATIONS
+Backend
+ Route GET /api/invites/:eventId
+
+Frontend
+ InvitationsList.jsx (admin)
+
+Liste des invités
+
+Aperçu de chaque carte (avec composant InvitationCard)
+
+Bouton "télécharger" ou "voir QR"
+
+📷 7. SCAN EN TEMPS RÉEL (Contrôleurs)
+Backend
+ scanController.js :
+
+Vérifie si l’invité est déjà entré
+
+Marque comme "scanné"
+
+ socket/index.js :
+
+Emit scanSuccess, alreadyScanned, invalidCode
+
+Mettre à jour dashboard admin en live
+
+Frontend
+ ScanPage.jsx (controller)
+
+Scanner via react-qr-reader ou caméra
+
+Affichage en temps réel du résultat
+
+ Socket : affichage en direct des scans sur dashboard admin
+
+🔒 8. SÉCURITÉ
+ Chaque QR contient une signature hashée (ex : SHA256 de inviteId+secret)
+
+ Auth middleware pour protéger /api/invites, /api/events
+
+ Rate limit sur scan
+
+ Une invitation = 1 scan autorisé
+
+🎨 9. UI / UX (bonus)
+ Mode sombre / clair
+
+ Responsive mobile
+
+ Composants réutilisables : Button, Card, Modal, etc.
+
+ Placeholder image QR si jamais image ne charge pas
+
+🧪 10. TEST FINAL
+ Créer un événement
+
+ Uploader une liste d’invités (Excel)
+
+ Vérifier que les cartes se génèrent
+
+ Scanner une invitation
+
+ Empêcher second scan
+
+ Voir les stats sur le dashboard
+
+
+ ==================================================
+
+
+ client === {
+  "name": "tiptop-event",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/material": "^7.2.0",
+    "axios": "^1.11.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-router-dom": "^7.7.1",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.30.1",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@vitejs/plugin-react": "^4.6.0",
+    "eslint": "^9.30.1",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.20",
+    "globals": "^16.3.0",
+    "prettier": "^3.6.2",
+    "rollup": "^4.46.2",
+    "vite": "^7.0.4"
+  }
+}       je suis entrain de telecharger firebase coté client         server ==== {
+  "name": "tiptop-backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.12.4",
+  "dependencies": {
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0",
+    "firebase-admin": "^13.4.0",
+    "morgan": "^1.10.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}                       src/component/  invitationCard.jsx  contexte/      hook/    pages/ Admin/ CreateEvent.jsx, Dashboard.jsx, InvitationList.jsx, UploadInvites.jsx  et Controller/ Scanner.jsx et ScanResult.jsx     service/api.js     utils/     et les reste (les bases)                    server === controllers/authController.js, eventController.js, inviteController.js, scanController.js      generated/eventID/invite_nom.png   middleware/authMiddleware.js et errorMiddleware.js    models/inviteModel.js   route/auth.js, event.js, invite.js, scan.js     services/excelService.js, firebase.js, imageGenerator.js, pdfGenerator.js, qrCodeService.js    socket/index.js     uploads/invites.xlsx    utils/excelParser.js, firebase.js, qrCode.js                server.js  je veux qu'on mette d'abord en place l'authentification de l'admin et qu'on prepare aussi celles de controlleur et qu'on prepare aussi la BDD et toutes les bonnes regles  pour une bonne confidentialité qui va avec 
+
+
+
+j'ai cette erreur === [nodemon] watching extensions: js,mjs,cjs,json
+[nodemon] starting `node server.js`
+file:///E:/PORTFOLIO/PERSO/tiptop/server/server.js:8
+import eventRoutes from './routes/event.js';
+       ^^^^^^^^^^^
+SyntaxError: The requested module './routes/event.js' does not provide an export named 'default'
+    at ModuleJob._instantiate (node:internal/modules/esm/module_job:180:21)
+       ^^^^^^^^^^^
+SyntaxError: The requested module './routes/event.js' does not provide an export named 'default'
+    at ModuleJob._instantiate (node:internal/modules/esm/module_job:180:21)
+    at async ModuleJob.run (node:internal/modules/esm/module_job:263:5)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:547:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:116:5)
+       ^^^^^^^^^^^
+SyntaxError: The requested module './routes/event.js' does not provide an export named 'default'
+    at ModuleJob._instantiate (node:internal/modules/esm/module_job:180:21)
+    at async ModuleJob.run (node:internal/modules/esm/module_job:263:5)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:547:26)
+       ^^^^^^^^^^^
+SyntaxError: The requested module './routes/event.js' does not provide an export named 'default'
+    at ModuleJob._instantiate (node:internal/modules/esm/module_job:180:21)
+    at async ModuleJob.run (node:internal/modules/esm/module_job:263:5)
+SyntaxError: The requested module './routes/event.js' does not provide an export named 'default'
+    at ModuleJob._instantiate (node:internal/modules/esm/module_job:180:21)
+    at ModuleJob._instantiate (node:internal/modules/esm/module_job:180:21)
+    at async ModuleJob.run (node:internal/modules/esm/module_job:263:5)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:547:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:116:5)
+
+Node.js v22.13.0
+[nodemon] app crashed - waiting for file changes before starting...       pour ce code dans server.js === import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import morgan from 'morgan';
+import fs from 'fs';
+import path from 'path';
+import authRoutes from './routes/auth.js'; // 👈 AJOUT
+import eventRoutes from './routes/event.js';
+
+
+dotenv.config();
+
+const app = express();
+const PORT = process.env.PORT || 4000;
+
+// Middlewares
+app.use(cors());
+app.use(express.json());
+app.use(morgan('dev'));
+
+// Route d'auth
+app.use('/api/auth', authRoutes); // 👈 AJOUT
+
+// Test route
+app.get('/', (req, res) => {
+  res.send('🚀 TipTop Event Backend is alive!');
+});
+
+app.use('/api/events', eventRoutes);
+
+// Créer le dossier uploads si pas encore là
+const uploadsDir = path.join(process.cwd(), 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir);
+}
+
+// Start server
+app.listen(PORT, () => {
+  console.log(`✅ Server running on http://localhost:${PORT}`);
+});      je tiens à preciser que dans event.js j'ai rien et  que dans eventController.js j'ai === import admin from '../services/firebase.js';
+
+export const createEvent = async (req, res) => {
+  const { name, date, location } = req.body;
+  const adminId = req.user.uid;
+
+  if (!name || !date || !location) {
+    return res.status(400).json({ error: "Champs manquants" });
+  }
+
+  try {
+    const db = admin.firestore();
+    const newEventRef = db.collection("events").doc();
+    await newEventRef.set({
+      name,
+      date,
+      location,
+      adminId,
+      createdAt: Date.now(),
+    });
+
+    res.status(201).json({ id: newEventRef.id, name, date, location });
+  } catch (error) {
+    res.status(500).json({ error: "Erreur lors de la création" });
+  }
+};
+
+export const getEventsByAdmin = async (req, res) => {
+  const adminId = req.user.uid;
+
+  try {
+    const db = admin.firestore();
+    const snapshot = await db.collection("events").where("adminId", "==", adminId).get();
+
+    const events = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    res.status(200).json(events);
+  } catch (error) {
+    res.status(500).json({ error: "Erreur de récupération des événements" });
+  }
+};      
