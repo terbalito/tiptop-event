@@ -1,24 +1,27 @@
 // src/components/Sidebar.js
-import { Drawer, List, ListItem, ListItemText } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { Drawer, List, ListItemButton, ListItemText } from "@mui/material";
+import { useNavigate } from "react-router-dom";
+import { logout } from "../services/api";
 
 const Sidebar = () => {
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    localStorage.removeItem("user"); // ou sessionStorage, selon
-    navigate('/login');
+  const handleLogout = async () => {
+    await logout();                    // backend: clear cookie si utilisé
+    localStorage.removeItem("isAuthenticated"); // ton guard actuel
+    localStorage.removeItem("authToken");       // si tu en ajoutes plus tard
+    navigate("/login");
   };
 
   return (
     <Drawer variant="permanent" anchor="left">
       <List sx={{ width: 240 }}>
-        <ListItem button onClick={() => navigate('/')}>
+        <ListItemButton onClick={() => navigate("/dashboard")}>
           <ListItemText primary="Dashboard" />
-        </ListItem>
-        <ListItem button onClick={handleLogout}>
+        </ListItemButton>
+        <ListItemButton onClick={handleLogout}>
           <ListItemText primary="Logout" />
-        </ListItem>
+        </ListItemButton>
       </List>
     </Drawer>
   );

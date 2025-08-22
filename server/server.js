@@ -4,8 +4,10 @@ import dotenv from 'dotenv';
 import morgan from 'morgan';
 import fs from 'fs';
 import path from 'path';
-import authRoutes from './routes/auth.js'; // 👈 AJOUT
+import cookieParser from 'cookie-parser';   // 👈 AJOUT
+import authRoutes from './routes/auth.js';
 import eventRoutes from './routes/event.js';
+
 
 
 dotenv.config();
@@ -14,12 +16,17 @@ const app = express();
 const PORT = process.env.PORT || 4000;
 
 // Middlewares
-app.use(cors());
+app.use(cors({
+  origin: "http://localhost:5173", 
+  credentials: true,               
+}));
 app.use(express.json());
+app.use(cookieParser());          
 app.use(morgan('dev'));
 
+
 // Route d'auth
-app.use('/api/auth', authRoutes); // 👈 AJOUT
+app.use('/api/auth', authRoutes); 
 
 // Test route
 app.get('/', (req, res) => {

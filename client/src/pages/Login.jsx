@@ -3,39 +3,45 @@ import { TextField, Button, Snackbar, Alert, Box, Typography, Container, Paper }
 import { useNavigate } from 'react-router-dom';
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../services/firebase";
+import { loginBackend } from "../services/api"; 
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
-
   const navigate = useNavigate();
 
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password.trim();
 
-const handleLogin = async (e) => {
-  e.preventDefault();
+    if (!trimmedEmail || !trimmedPassword) {
+      setSnackbar({ open: true, message: 'Tous les champs sont obligatoires', severity: 'error' });
+      return;
+    }
 
-  const trimmedEmail = email.trim();
-  const trimmedPassword = password.trim();
+    try {
+      // 1. Connexion avec Firebase
+      const userCredential = await signInWithEmailAndPassword(auth, trimmedEmail, trimmedPassword);
+      const user = userCredential.user;
+      
+      // 2. Obtenir l'idToken pour l'envoyer au backend
+      const idToken = await user.getIdToken();
 
-  if (!trimmedEmail || !trimmedPassword) {
-    setSnackbar({ open: true, message: 'Tous les champs sont obligatoires', severity: 'error' });
-    return;
-  }
+      // 3. Envoyer l'idToken au backend pour créer le cookie de session
+      await loginBackend(idToken); // 👈 NOUVELLE FONCTION
 
-  try {
-    await signInWithEmailAndPassword(auth, trimmedEmail, trimmedPassword);
-    setSnackbar({ open: true, message: 'Connexion réussie !', severity: 'success' });
-
-    setTimeout(() => {
-      localStorage.setItem("isAuthenticated", "true");
-      navigate('/dashboard');
-    }, 1500);
-  } catch (err) {
-    setSnackbar({ open: true, message: 'Identifiants incorrects', severity: 'error' });
-  }
-};
+      // Si tout réussit, on peut rediriger
+      setSnackbar({ open: true, message: 'Connexion réussie !', severity: 'success' });
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 1500);
+    } catch (err) {
+      console.error(err);
+      setSnackbar({ open: true, message: 'Identifiants incorrects', severity: 'error' });
+    }
+  };
 
   return (
     <Container maxWidth="sm">
@@ -43,7 +49,6 @@ const handleLogin = async (e) => {
         <Typography variant="h5" align="center" gutterBottom>
           Connexion à votre espace
         </Typography>
-
         <Box component="form" onSubmit={handleLogin} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <TextField
             label="Email"
@@ -53,7 +58,6 @@ const handleLogin = async (e) => {
             onChange={(e) => setEmail(e.target.value)}
             fullWidth
           />
-
           <TextField
             label="Mot de passe"
             type="password"
@@ -62,14 +66,11 @@ const handleLogin = async (e) => {
             onChange={(e) => setPassword(e.target.value)}
             fullWidth
           />
-
           <Button type="submit" variant="contained" fullWidth>
             Se connecter
           </Button>
         </Box>
       </Paper>
-
-      {/* Popup */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={3000}
