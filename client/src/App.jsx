@@ -1,23 +1,30 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import Dashboard from './pages/Admin/Dashboard';
 import Login from './pages/Login';
 
-function App() {
-  const isAuthenticated = localStorage.getItem("isAuthenticated") === "true";
+// Nouveau composant de route privée
+const PrivateRoute = () => {
+  const { user, loading } = useAuth();
+  if (loading) return <div>Chargement...</div>; // Affiche un écran de chargement
 
+  return user ? <Outlet /> : <Navigate to="/login" />;
+};
+
+function App() {
   return (
-    <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route
-        path="/"
-        element={isAuthenticated ? <Navigate to="/dashboard" /> : <Navigate to="/login" />}
-      />
-      <Route
-        path="/dashboard"
-        element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" />}
-      />
-      <Route path="/logout" element={<Navigate to="/login" />} />
-    </Routes>
+    <AuthProvider>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        
+        <Route element={<PrivateRoute />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+        </Route>
+
+        <Route path="/" element={<Navigate to="/dashboard" />} />
+        <Route path="*" element={<Navigate to="/dashboard" />} />
+      </Routes>
+    </AuthProvider>
   );
 }
 

@@ -1,15 +1,15 @@
+// src/pages/Login.jsx
 import React, { useState } from 'react';
 import { TextField, Button, Snackbar, Alert, Box, Typography, Container, Paper } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../services/firebase";
-import { loginBackend } from "../services/api"; 
+import { useAuth } from '../context/AuthContext'; // 👈 IMPORT
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const navigate = useNavigate();
+  const { login } = useAuth(); // 👈 UTILISATION
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -22,23 +22,13 @@ export default function Login() {
     }
 
     try {
-      // 1. Connexion avec Firebase
-      const userCredential = await signInWithEmailAndPassword(auth, trimmedEmail, trimmedPassword);
-      const user = userCredential.user;
-      
-      // 2. Obtenir l'idToken pour l'envoyer au backend
-      const idToken = await user.getIdToken();
-
-      // 3. Envoyer l'idToken au backend pour créer le cookie de session
-      await loginBackend(idToken); // 👈 NOUVELLE FONCTION
-
-      // Si tout réussit, on peut rediriger
+      await login(trimmedEmail, trimmedPassword);
       setSnackbar({ open: true, message: 'Connexion réussie !', severity: 'success' });
       setTimeout(() => {
         navigate('/dashboard');
       }, 1500);
     } catch (err) {
-      console.error(err);
+      console.error("Erreur de connexion:", err);
       setSnackbar({ open: true, message: 'Identifiants incorrects', severity: 'error' });
     }
   };
