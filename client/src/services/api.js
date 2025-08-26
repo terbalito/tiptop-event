@@ -6,6 +6,15 @@ const api = axios.create({
   withCredentials: true,
 });
 
+// middleware auth si besoin
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 // FONCTION POUR SE CONNECTER AU BACKEND ET CREER LA SESSION
 export const loginBackend = async (idToken) => {
   const { data } = await api.post("/auth/login", { idToken }); // 👈 MODIFICATION : envoi de l'idToken

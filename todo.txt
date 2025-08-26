@@ -215,7 +215,95 @@ Affichage en temps réel du résultat
   "devDependencies": {
     "nodemon": "^3.1.10"
   }
-}                       src/component/  invitationCard.jsx  contexte/      hook/    pages/ Admin/ CreateEvent.jsx, Dashboard.jsx, InvitationList.jsx, UploadInvites.jsx  et Controller/ Scanner.jsx et ScanResult.jsx     service/api.js     utils/     et les reste (les bases)                    server === controllers/authController.js, eventController.js, inviteController.js, scanController.js      generated/eventID/invite_nom.png   middleware/authMiddleware.js et errorMiddleware.js    models/inviteModel.js   route/auth.js, event.js, invite.js, scan.js     services/excelService.js, firebase.js, imageGenerator.js, pdfGenerator.js, qrCodeService.js    socket/index.js     uploads/invites.xlsx    utils/excelParser.js, firebase.js, qrCode.js                server.js  je veux qu'on mette d'abord en place l'authentification de l'admin et qu'on prepare aussi celles de controlleur et qu'on prepare aussi la BDD et toutes les bonnes regles  pour une bonne confidentialité qui va avec 
+}                       Voici une représentation de l'arborescence de votre projet, organisée en deux sections principales : le frontend (`client`) et le backend (`server`).
+
+-----
+
+### Arborescence du dossier `client`
+
+```
+client/
+├── src/
+│   ├── components/
+│   │   ├── Layout.jsx
+│   │   └── invitationCard.jsx
+│   │
+│   ├── context/
+│   │   └── AuthContext.jsx
+│   │
+│   ├── hooks/
+│   │   └── useEvents.js
+│   │
+│   ├── pages/
+│   │   ├── Admin/
+│   │   │   ├── CreateEvent.jsx
+│   │   │   ├── Dashboard.jsx
+│   │   │   ├── InvitationList.jsx
+│   │   │   └── UploadInvites.jsx
+│   │   ├── Auth/
+│   │   │   └── Login.jsx
+│   │   ├── Event/
+│   │   │   └── Scanner.jsx
+│   │   │   └── ScanResult.jsx
+│   │
+│   ├── services/
+│   │   └── api.js
+│   │
+│   └── utils/
+│
+└── package.json
+└── vite.config.js
+```
+
+-----
+
+### Arborescence du dossier `server`
+
+```
+server/
+├── controllers/
+│   ├── authController.js
+│   ├── eventController.js
+│   ├── inviteController.js
+│   ├── scanController.js
+│
+├── generated/
+│   └── <eventId>/
+│       └── invite_<nom>.png
+│
+├── middleware/
+│   ├── authMiddleware.js
+│   └── errorMiddleware.js
+│
+├── models/
+│   └── inviteModel.js
+│
+├── routes/
+│   ├── auth.js
+│   ├── event.js
+│   ├── invite.js
+│   └── scan.js
+│
+├── services/
+│   ├── excelService.js
+│   ├── firebase.js
+│   ├── imageGenerator.js
+│   ├── pdfGenerator.js
+│   └── qrCodeService.js
+│
+├── socket/
+│   └── index.js
+│
+├── uploads/
+│   └── invites.xlsx
+│
+├── utils/
+│   ├── excelParser.js
+│   └── qrCode.js
+│
+├── server.js
+└── package.json
+``` je veux qu'on mette d'abord en place l'authentification de l'admin et qu'on prepare aussi celles de controlleur et qu'on prepare aussi la BDD et toutes les bonnes regles  pour une bonne confidentialité qui va avec 
 
 
 

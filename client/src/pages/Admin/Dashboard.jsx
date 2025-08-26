@@ -1,4 +1,3 @@
-// src/pages/Admin/Dashboard.jsx
 import { useEffect, useState } from "react";
 import {
   Box, Paper, TextField, Button, Typography, Snackbar, Alert,
@@ -6,6 +5,7 @@ import {
 } from "@mui/material";
 import Layout from "../../components/Layout";
 import { createEvent, fetchEvents } from "../../services/api";
+import UploadInvites from "./UploadInvites"; // 👈 import du composant
 
 export default function Dashboard() {
   const [form, setForm] = useState({ name: "", date: "", location: "" });
@@ -80,18 +80,24 @@ export default function Dashboard() {
           </Box>
         </Paper>
 
-        {/* Liste */}
+        {/* Liste des événements */}
         <Paper sx={{ p: 3, flex: 1 }}>
           <Typography variant="h6" gutterBottom>Vos événements</Typography>
           <List dense>
             {events.map((ev) => (
-              <Box key={ev.id}>
+              <Box key={ev.id} sx={{ mb: 2 }}>
                 <ListItem>
                   <ListItemText
                     primary={ev.name}
                     secondary={`Date: ${ev.date} • Lieu: ${ev.location}`}
                   />
                 </ListItem>
+
+                {/* 👇 Ajout du bouton Upload pour cet event */}
+                <Box sx={{ pl: 2, pb: 1 }}>
+                  <UploadInvites eventId={ev.id} />
+                </Box>
+
                 <Divider />
               </Box>
             ))}
