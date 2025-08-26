@@ -1,23 +1,28 @@
-// src/components/Layout.js
-import { Box, AppBar, Toolbar, Typography } from '@mui/material';
+import { Box, useMediaQuery, useTheme } from '@mui/material';
 import Sidebar from '../components/Sidebar';
 
 const Layout = ({ children }) => {
-  return (
-    <Box sx={{ display: 'flex' }}>
-      <Sidebar />
-      <Box sx={{ flexGrow: 1 }}>
-        <AppBar position="static" color="primary" sx={{ ml: 30 }}>
-          <Toolbar>
-            <Typography variant="h6" component="div">
-              Dashboard
-            </Typography>
-          </Toolbar>
-        </AppBar>
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
-        <Box sx={{ p: 3 }}>
-          {children}
-        </Box>
+  return (
+    <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: theme.palette.background.default }}>
+      <Sidebar />
+      <Box 
+        component="main" 
+        sx={{ 
+          flexGrow: 1,
+          p: { xs: 2, md: 3 },
+          // ml: { md: '240px' },
+          width: { md: `calc(100% - 240px)` },
+          minHeight: '100vh',
+          transition: theme.transitions.create(['margin', 'width'], {
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.leavingScreen,
+          }),
+        }}
+      >
+        {children}
       </Box>
     </Box>
   );
