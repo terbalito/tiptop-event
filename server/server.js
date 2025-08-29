@@ -4,9 +4,10 @@ import dotenv from 'dotenv';
 import morgan from 'morgan';
 import fs from 'fs';
 import path from 'path';
-import cookieParser from 'cookie-parser';   // 👈 AJOUT
+import cookieParser from 'cookie-parser';   
 import authRoutes from './routes/auth.js';
 import eventRoutes from './routes/event.js';
+import inviteRoutes from './routes/invites.js';
 
 
 
@@ -34,6 +35,8 @@ app.get('/', (req, res) => {
 });
 
 app.use('/api/events', eventRoutes);
+
+app.use('/api/invites', inviteRoutes); 
 
 // Créer le dossier uploads si pas encore là
 const uploadsDir = path.join(process.cwd(), 'uploads');

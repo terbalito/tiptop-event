@@ -8,12 +8,23 @@ const api = axios.create({
 
 // middleware auth si besoin
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
+  // Rien à ajouter, les cookies sont gérés automatiquement
   return config;
 });
+
+// Ajoutez aussi un intercepteur pour les erreurs
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Rediriger vers la page de login si non autorisé
+      localStorage.removeItem("authToken");
+      localStorage.removeItem("token");
+      window.location.href = "/login";
+    }
+    return Promise.reject(error);
+  }
+);
 
 // FONCTION POUR SE CONNECTER AU BACKEND ET CREER LA SESSION
 export const loginBackend = async (idToken) => {
@@ -30,6 +41,12 @@ export const fetchEvents = async () => {
   const { data } = await api.get("/events");
   return data;
 };
+
+export const fetchInvitesByEvent = async (eventId) => {
+  const { data } = await api.get(`/invites/${eventId}`);
+  return data; // doit renvoyer un tableau d'invités côté backend
+};
+
 
 export const logout = async () => {
   try {

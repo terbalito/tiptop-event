@@ -6,7 +6,8 @@ import {
 import { CloudUpload, Description } from "@mui/icons-material";
 import axios from "../../services/api";
 
-const UploadInvites = ({ eventId }) => {
+const UploadInvites = ({ eventId, onUploadSuccess }) => {
+
   const theme = useTheme();
   const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
@@ -16,7 +17,6 @@ const UploadInvites = ({ eventId }) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Vérification du type de fichier
     if (!file.name.match(/\.(xlsx|xls)$/)) {
       setSnackbar({ open: true, message: "Veuillez sélectionner un fichier Excel (.xlsx ou .xls)", severity: "error" });
       return;
@@ -32,11 +32,26 @@ const UploadInvites = ({ eventId }) => {
         headers: { "Content-Type": "multipart/form-data" },
       });
       setSnackbar({ open: true, message: res.data.message || "Fichier uploadé avec succès", severity: "success" });
+      
+      if (onUploadSuccess) onUploadSuccess();  // 🔥 recharger le compteur
     } catch (err) {
-      console.error(err);
+      console.error("Erreur upload complète:", err);
+      console.error("Response data:", err.response?.data);
+      console.error("Response status:", err.response?.status);
+      
+      let errorMessage = "Erreur lors de l'upload du fichier";
+      
+      if (err.response?.status === 404) {
+        errorMessage = "Endpoint non trouvé. Vérifiez que le serveur backend fonctionne.";
+      } else if (err.response?.status === 401) {
+        errorMessage = "Non autorisé - veuillez vous reconnecter";
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      }
+      
       setSnackbar({ 
         open: true, 
-        message: err.response?.data?.message || "Erreur lors de l'upload du fichier", 
+        message: errorMessage, 
         severity: "error" 
       });
     } finally {
@@ -82,7 +97,7 @@ const UploadInvites = ({ eventId }) => {
         onChange={handleFileChange}
       />
 
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
         <label htmlFor={`excel-upload-${eventId}`}>
           <Button 
             variant="contained" 
@@ -119,9 +134,13 @@ const UploadInvites = ({ eventId }) => {
         )}
       </Box>
 
+      <Typography variant="caption" sx={{ display: 'block', mt: 1, color: theme.palette.info.main }}>
+        Event ID: {eventId}
+      </Typography>
+
       <Snackbar
         open={snackbar.open}
-        autoHideDuration={4000}
+        autoHideDuration={6000}
         onClose={() => setSnackbar({ ...snackbar, open: false })}
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >
