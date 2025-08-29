@@ -14,7 +14,6 @@ import {
 import Layout from "../../components/Layout";
 import { createEvent, fetchEvents, fetchInvitesByEvent } from "../../services/api";
 import UploadInvites from "./UploadInvites";
-// import fetchInvites  from "../../services/api"; 
 
 export default function Dashboard() {
   const theme = useTheme();
@@ -30,35 +29,34 @@ export default function Dashboard() {
     try {
       const data = await fetchEvents();
       setEvents(data);
-
-      // Charger aussi le nombre d'invités pour chaque event
-      // const counts = {};
-    //   for (const ev of data) {
-    //     try {
-    //       const invites = await fetchInvitesByEvent(ev.id);
-    //       counts[ev.id] = invites.length;
-    //     } catch {
-    //       counts[ev.id] = 0;
-    //     }
-    //   }
-    //   setInviteCounts(counts);
-     } catch (e) {
+    } catch (e) {
       setSnackbar({ open: true, message: "Erreur de chargement des événements", severity: "error" });
     }
   };
 
   const loadInviteCounts = async () => {
-  try {
-    const counts = {};
-    for (const ev of events) {
-      const invites = await fetchInvitesByEvent(ev.id);
-      counts[ev.id] = invites.length;
+    try {
+      const counts = {};
+      for (const ev of events) {
+        try {
+          const invites = await fetchInvitesByEvent(ev.id);
+          counts[ev.id] = invites.length;
+        } catch {
+          counts[ev.id] = 0;
+        }
+      }
+      setInviteCounts(counts);
+    } catch (err) {
+      console.error("Erreur chargement des invités:", err);
     }
-    setInviteCounts(counts);
-  } catch (err) {
-    console.error("Erreur chargement des invités:", err);
-  }
-};
+  };
+
+  // Charger les compteurs après le chargement des événements
+  useEffect(() => {
+    if (events.length > 0) {
+      loadInviteCounts();
+    }
+  }, [events]);
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -82,296 +80,180 @@ export default function Dashboard() {
 
   return (
     <Layout>
-      <Container
-        maxWidth="xl"
-        sx={{
-          p: { xs: 2, md: 3 },
-          minHeight: "100vh",
-          backgroundColor: theme.palette.background.default,
-          backgroundImage:
-            "linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px)",
-          backgroundSize: "20px 20px",
-        }}
-      >
-        <Typography
-          variant="h4"
-          component="h1"
-          gutterBottom
-          sx={{
-            fontWeight: 700,
-            mb: 4,
-            textAlign: "center",
-            background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
-            backgroundClip: "text",
-            textFillColor: "transparent",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-          }}
-        >
-          Gestion des Événements
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 700, mb: 4 }}>
+          Dashboard Événements
         </Typography>
 
-        <Stack
-          direction={{ xs: "column", lg: "row" }}
-          spacing={3}
-          alignItems="flex-start"
-          justifyContent="center"
-        >
-          {/* Formulaire de création */}
-          <Paper
-            sx={{
-              p: 3,
-              flex: 1,
-              minWidth: 300,
-              maxWidth: { lg: "400px" },
-              background:
-                theme.palette.mode === "dark"
-                  ? "linear-gradient(145deg, #1a1a1a, #2d2d2d)"
-                  : "linear-gradient(145deg, #ffffff, #f0f0f0)",
-              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
-              borderRadius: "16px",
-              border: `1px solid ${theme.palette.divider}`,
-            }}
-          >
-            <Typography
-              variant="h6"
-              gutterBottom
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                fontWeight: 600,
-                color: theme.palette.primary.main,
-              }}
-            >
-              <AddIcon sx={{ mr: 1 }} /> Créer un événement
-            </Typography>
-
-            <Box component="form" onSubmit={handleCreate}>
+        {/* Formulaire de création */}
+        <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
+          <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
+            <AddIcon sx={{ mr: 1 }} /> Créer un nouvel événement
+          </Typography>
+          <Box component="form" onSubmit={handleCreate} sx={{ mt: 2 }}>
+            <Stack spacing={2}>
               <TextField
-                label="Nom de l'événement"
                 name="name"
+                label="Nom de l'événement"
                 value={form.name}
                 onChange={handleChange}
                 fullWidth
-                sx={{ mb: 2 }}
-                InputProps={{
-                  sx: { borderRadius: "12px" },
-                }}
+                required
               />
               <TextField
-                label="Date"
-                type="date"
                 name="date"
+                label="Date"
+                type="datetime-local"
                 value={form.date}
                 onChange={handleChange}
-                InputLabelProps={{ shrink: true }}
                 fullWidth
-                sx={{ mb: 2 }}
-                InputProps={{
-                  sx: { borderRadius: "12px" },
-                }}
+                required
+                InputLabelProps={{ shrink: true }}
               />
               <TextField
-                label="Lieu"
                 name="location"
+                label="Lieu"
                 value={form.location}
                 onChange={handleChange}
                 fullWidth
-                sx={{ mb: 2 }}
-                InputProps={{
-                  sx: { borderRadius: "12px" },
-                }}
+                required
               />
-              <Button
-                type="submit"
-                variant="contained"
-                fullWidth
-                sx={{
-                  borderRadius: "12px",
-                  py: 1.5,
-                  fontWeight: 600,
-                  background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
-                }}
-              >
+              <Button type="submit" variant="contained" size="large" startIcon={<EventIcon />}>
                 Créer l'événement
               </Button>
-            </Box>
-          </Paper>
+            </Stack>
+          </Box>
+        </Paper>
 
-          {/* Liste des événements */}
-          <Paper
-            sx={{
-              p: 3,
-              flex: 2,
-              minWidth: 300,
-              maxWidth: { lg: "800px" },
-              background:
-                theme.palette.mode === "dark"
-                  ? "linear-gradient(145deg, #1a1a1a, #2d2d2d)"
-                  : "linear-gradient(145deg, #ffffff, #f0f0f0)",
-              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
-              borderRadius: "16px",
-              border: `1px solid ${theme.palette.divider}`,
-            }}
-          >
-            <Typography
-              variant="h6"
-              gutterBottom
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                fontWeight: 600,
-                color: theme.palette.primary.main,
-              }}
-            >
-              <EventIcon sx={{ mr: 1 }} /> Vos événements
+        {/* Liste des événements */}
+        <Paper elevation={3} sx={{ p: 3 }}>
+          <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
+            <EventIcon sx={{ mr: 1 }} /> Mes événements
+          </Typography>
+
+          {events.length === 0 ? (
+            <Typography variant="body1" sx={{ py: 4, textAlign: 'center', color: 'text.secondary' }}>
+              Aucun événement créé pour le moment
             </Typography>
-
-            {events.length === 0 ? (
-              <Box
-                sx={{
-                  textAlign: "center",
-                  py: 6,
-                  color: theme.palette.text.secondary,
-                }}
-              >
-                <EventIcon sx={{ fontSize: 64, opacity: 0.5, mb: 2 }} />
-                <Typography variant="body1">
-                  Aucun événement pour le moment.
-                </Typography>
-                <Typography variant="body2" sx={{ mt: 1 }}>
-                  Créez votre premier événement en utilisant le formulaire.
-                </Typography>
-              </Box>
-            ) : (
-              <List>
-                {events.map((ev) => (
-                  <Box key={ev.id}>
-                    <ListItem
+          ) : (
+            <List>
+              {events.map((ev) => (
+                <Box key={ev.id}>
+                  <ListItem
+                    sx={{
+                      flexDirection: "column",
+                      alignItems: "flex-start",
+                      p: 2,
+                      mb: 2,
+                      borderRadius: "12px",
+                      backgroundColor:
+                        theme.palette.mode === "dark"
+                          ? "rgba(255, 255, 255, 0.05)"
+                          : "rgba(0, 0, 0, 0.03)",
+                      transition: "all 0.2s ease",
+                      "&:hover": {
+                        transform: "translateY(-2px)",
+                        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+                      },
+                    }}
+                  >
+                    <Box
                       sx={{
-                        flexDirection: "column",
+                        width: "100%",
+                        display: "flex",
+                        justifyContent: "space-between",
                         alignItems: "flex-start",
-                        p: 2,
-                        mb: 2,
-                        borderRadius: "12px",
-                        backgroundColor:
-                          theme.palette.mode === "dark"
-                            ? "rgba(255, 255, 255, 0.05)"
-                            : "rgba(0, 0, 0, 0.03)",
-                        transition: "all 0.2s ease",
-                        "&:hover": {
-                          transform: "translateY(-2px)",
-                          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
-                        },
                       }}
                     >
-                      <Box
-                        sx={{
-                          width: "100%",
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "flex-start",
-                        }}
-                      >
-                        <ListItemText
-                          primary={
-                            <Typography
-                              variant="h6"
-                              component="div"
-                              sx={{ fontWeight: 600 }}
+                      <ListItemText
+                        primary={
+                          <Typography
+                            variant="h6"
+                            component="div"
+                            sx={{ fontWeight: 600 }}
+                          >
+                            {ev.name}
+                          </Typography>
+                        }
+                        secondary={
+                          <Box sx={{ mt: 1 }}>
+                            <Box
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                mb: 0.5,
+                              }}
                             >
-                              {ev.name}
-                            </Typography>
-                          }
-                          secondary={
-                            <Box sx={{ mt: 1 }}>
-                              <Box
+                              <DateIcon
                                 sx={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  mb: 0.5,
+                                  fontSize: 18,
+                                  mr: 1,
+                                  color: theme.palette.primary.main,
                                 }}
-                              >
-                                <DateIcon
-                                  sx={{
-                                    fontSize: 18,
-                                    mr: 1,
-                                    color: theme.palette.primary.main,
-                                  }}
-                                />
-                                <Typography variant="body2" component="span">
-                                  {new Date(ev.date).toLocaleDateString("fr-FR", {
-                                    weekday: "long",
-                                    year: "numeric",
-                                    month: "long",
-                                    day: "numeric",
-                                  })}
-                                </Typography>
-                              </Box>
-                              <Box sx={{ display: "flex", alignItems: "center" }}>
-                                <LocationIcon
-                                  sx={{
-                                    fontSize: 18,
-                                    mr: 1,
-                                    color: theme.palette.primary.main,
-                                  }}
-                                />
-                                <Typography variant="body2" component="span">
-                                  {ev.location}
-                                </Typography>
-                              </Box>
+                              />
+                              <Typography variant="body2" component="span">
+                                {new Date(ev.date).toLocaleDateString("fr-FR", {
+                                  weekday: "long",
+                                  year: "numeric",
+                                  month: "long",
+                                  day: "numeric",
+                                })}
+                              </Typography>
                             </Box>
-                          }
-                        />
+                            <Box sx={{ display: "flex", alignItems: "center" }}>
+                              <LocationIcon
+                                sx={{
+                                  fontSize: 18,
+                                  mr: 1,
+                                  color: theme.palette.primary.main,
+                                }}
+                              />
+                              <Typography variant="body2" component="span">
+                                {ev.location}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        }
+                      />
 
-                        <Chip
-                          label="Actif"
-                          color="primary"
-                          variant="outlined"
-                          size="small"
-                          sx={{ ml: 2 }}
-                        />
-                      </Box>
+                      <Chip
+                        label="Actif"
+                        color="primary"
+                        variant="outlined"
+                        size="small"
+                        sx={{ ml: 2 }}
+                      />
+                    </Box>
 
-                      {/* Bouton d'upload + compteur */}
-                      <Box sx={{ mt: 2, width: "100%" }}>
-                        
-                        <UploadInvites eventId={ev.id} onUploadSuccess={loadInviteCounts} />
+                    {/* Bouton d'upload + compteur */}
+                    <Box sx={{ mt: 2, width: "100%" }}>
+                      <UploadInvites eventId={ev.id} onUploadSuccess={loadInviteCounts} />
 
-
-                        {/* Compteur d'invités */}
-                        <Chip
-                          icon={<GroupIcon />}
-                          label={`${inviteCounts[ev.id] || 0} invités`}
-                          color="secondary"
-                          variant="outlined"
-                          size="small"
-                          sx={{ mt: 1 }}
-                        />
-                      </Box>
-                    </ListItem>
-                    <Divider sx={{ my: 2 }} />
-                  </Box>
-                ))}
-              </List>
-            )}
-          </Paper>
-        </Stack>
+                      {/* Compteur d'invités */}
+                      <Chip
+                        icon={<GroupIcon />}
+                        label={`${inviteCounts[ev.id] || 0} invités`}
+                        color="secondary"
+                        variant="outlined"
+                        size="small"
+                        sx={{ mt: 1 }}
+                      />
+                    </Box>
+                  </ListItem>
+                  <Divider sx={{ my: 2 }} />
+                </Box>
+              ))}
+            </List>
+          )}
+        </Paper>
 
         <Snackbar
           open={snackbar.open}
-          autoHideDuration={2500}
-          onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+          autoHideDuration={6000}
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
           anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
         >
-          <Alert
-            severity={snackbar.severity}
-            sx={{
-              width: "100%",
-              borderRadius: "12px",
-              fontWeight: 500,
-            }}
-          >
+          <Alert severity={snackbar.severity} sx={{ width: "100%" }}>
             {snackbar.message}
           </Alert>
         </Snackbar>

@@ -1,5 +1,5 @@
 import { parseExcel } from "../utils/excelParser.js";
-import admin from "../services/firebase.js"; // Import de l'admin SDK
+import admin from "../services/firebase.js";
 import fs from "fs";
 
 const db = admin.firestore();
@@ -23,7 +23,7 @@ export const uploadInvites = async (req, res) => {
     const invitesRef = db.collection('events').doc(eventId).collection('invites');
 
     guests.forEach((guest) => {
-      const newInviteRef = invitesRef.doc(); // Crée un nouveau document avec ID auto-généré
+      const newInviteRef = invitesRef.doc();
       batch.set(newInviteRef, {
         name: guest.name,
         email: guest.email,
@@ -66,6 +66,20 @@ export const getInvitesByEvent = async (req, res) => {
     res.json(invites);
   } catch (error) {
     console.error("Erreur getInvitesByEvent:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Nouvelle fonction pour obtenir le compteur d'invités
+export const getInvitesCount = async (req, res) => {
+  try {
+    const { eventId } = req.params;
+    
+    const snapshot = await db.collection('events').doc(eventId).collection('invites').get();
+    
+    res.json({ count: snapshot.size });
+  } catch (error) {
+    console.error("Erreur getInvitesCount:", error);
     res.status(500).json({ message: error.message });
   }
 };

@@ -8,7 +8,6 @@ const api = axios.create({
 
 // middleware auth si besoin
 api.interceptors.request.use((config) => {
-  // Rien à ajouter, les cookies sont gérés automatiquement
   return config;
 });
 
@@ -28,7 +27,7 @@ api.interceptors.response.use(
 
 // FONCTION POUR SE CONNECTER AU BACKEND ET CREER LA SESSION
 export const loginBackend = async (idToken) => {
-  const { data } = await api.post("/auth/login", { idToken }); // 👈 MODIFICATION : envoi de l'idToken
+  const { data } = await api.post("/auth/login", { idToken });
   return data;
 };
 
@@ -44,9 +43,14 @@ export const fetchEvents = async () => {
 
 export const fetchInvitesByEvent = async (eventId) => {
   const { data } = await api.get(`/invites/${eventId}`);
-  return data; // doit renvoyer un tableau d'invités côté backend
+  return data;
 };
 
+// Nouvelle fonction pour obtenir le compteur d'invités
+export const fetchInvitesCount = async (eventId) => {
+  const { data } = await api.get(`/invites/${eventId}/count`);
+  return data;
+};
 
 export const logout = async () => {
   try {

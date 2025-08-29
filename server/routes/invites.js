@@ -1,6 +1,6 @@
 import express from "express";
 import multer from "multer";
-import { uploadInvites, getInvitesByEvent } from "../controllers/inviteController.js";
+import { uploadInvites, getInvitesByEvent, getInvitesCount } from "../controllers/inviteController.js";
 import  authMiddleware  from "../middleware/authMiddleware.js";
 
 const router = express.Router();
@@ -16,7 +16,10 @@ router.post(
   uploadInvites
 );
 
-// Lister invités d’un event
+// Lister invités d'un event
 router.get("/:eventId", authMiddleware, getInvitesByEvent);
+
+// Obtenir le compteur d'invités d'un event
+router.get("/:eventId/count", authMiddleware, getInvitesCount);
 
 export default router;
