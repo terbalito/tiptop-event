@@ -1,7 +1,8 @@
 import { Box, useMediaQuery, useTheme } from '@mui/material';
 import Sidebar from '../components/Sidebar';
+import { Outlet } from 'react-router-dom';
 
-const Layout = ({ children }) => {
+const Layout = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
@@ -13,7 +14,6 @@ const Layout = ({ children }) => {
         sx={{ 
           flexGrow: 1,
           p: { xs: 2, md: 3 },
-          // ml: { md: '240px' },
           width: { md: `calc(100% - 240px)` },
           minHeight: '100vh',
           transition: theme.transitions.create(['margin', 'width'], {
@@ -22,7 +22,8 @@ const Layout = ({ children }) => {
           }),
         }}
       >
-        {children}
+        {/* Ici on injecte la route active */}
+        <Outlet />
       </Box>
     </Box>
   );
