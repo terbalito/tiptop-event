@@ -1,4 +1,4 @@
-// src/services/api.js
+// client/src/services/api.js
 import axios from "axios";
 
 const api = axios.create({
@@ -6,26 +6,20 @@ const api = axios.create({
   withCredentials: true,
 });
 
-// middleware auth si besoin
-api.interceptors.request.use((config) => {
-  return config;
-});
+api.interceptors.request.use((config) => config);
 
-// Ajoutez aussi un intercepteur pour les erreurs
 api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Rediriger vers la page de login si non autorisé
+  (res) => res,
+  (err) => {
+    if (err.response?.status === 401) {
       localStorage.removeItem("authToken");
       localStorage.removeItem("token");
       window.location.href = "/login";
     }
-    return Promise.reject(error);
+    return Promise.reject(err);
   }
 );
 
-// FONCTION POUR SE CONNECTER AU BACKEND ET CREER LA SESSION
 export const loginBackend = async (idToken) => {
   const { data } = await api.post("/auth/login", { idToken });
   return data;
@@ -46,16 +40,19 @@ export const fetchInvitesByEvent = async (eventId) => {
   return data;
 };
 
-// Nouvelle fonction pour obtenir le compteur d'invités
 export const fetchInvitesCount = async (eventId) => {
   const { data } = await api.get(`/invites/${eventId}/count`);
   return data;
 };
 
+// 👇 NEW: déclenche la génération (QR + cartes) pour l’event
+export const generateCards = async (eventId) => {
+  const { data } = await api.post(`/invites/${eventId}/generate-cards`);
+  return data;
+};
+
 export const logout = async () => {
-  try {
-    await api.post("/auth/logout");
-  } catch {}
+  try { await api.post("/auth/logout"); } catch {}
 };
 
 export default api;

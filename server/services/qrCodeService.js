@@ -1,16 +1,23 @@
+// server/services/qrCodeService.js
 import QRCode from "qrcode";
 import crypto from "crypto";
 
-export const generateInviteLink = (eventId, inviteId, token) => {
-  return `https://ton-domaine.com/ticket/${eventId}/${inviteId}/${token}`;
-};
+const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:5173";
 
 export const generateInviteQR = async (eventId, inviteId) => {
-  const token = crypto.randomBytes(12).toString("hex");
+  // 1) Génère un token aléatoire, puis son hash (on stocke QUE le hash)
+  const token = crypto.randomBytes(16).toString("hex");
+  const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
 
-  const link = generateInviteLink(eventId, inviteId, token);
+  // 2) Lien unique vers la page publique d’invitation
+  const link = `${CLIENT_URL}/invite/${eventId}/${inviteId}?t=${token}`;
 
-  const qrDataUrl = await QRCode.toDataURL(link);
+  // 3) QRCode en DataURL (PNG)
+  const qrDataUrl = await QRCode.toDataURL(link, {
+    errorCorrectionLevel: "M",
+    margin: 1,
+    width: 512,
+  });
 
-  return { qrDataUrl, token, link };
+  return { qrDataUrl, tokenHash, link };
 };
