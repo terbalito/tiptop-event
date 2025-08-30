@@ -1,6 +1,7 @@
 import { parseExcel } from "../utils/excelParser.js";
 import admin from "../services/firebase.js";
 import fs from "fs";
+import { generateInvitationCard } from "../services/imageGenerator.js";
 
 const db = admin.firestore();
 
@@ -81,5 +82,55 @@ export const getInvitesCount = async (req, res) => {
   } catch (error) {
     console.error("Erreur getInvitesCount:", error);
     res.status(500).json({ message: error.message });
+  }
+};
+
+export const generateInvitations = async (req, res) => {
+  try {
+    const { eventId } = req.params;
+
+    const snapshot = await db
+      .collection("events")
+      .doc(eventId)
+      .collection("invites")
+      .get();
+
+    if (snapshot.empty) {
+      return res.status(404).json({ message: "Aucun invité trouvé" });
+    }
+
+    const results = [];
+
+    for (const doc of snapshot.docs) {
+      const guest = { id: doc.id, ...doc.data() };
+
+      // 1. Générer QR + lien unique
+      const { qrDataUrl, token, link } = await generateInviteQR(eventId, guest.id);
+
+      // 2. Sauvegarder token + link en BDD
+      await db
+        .collection("events")
+        .doc(eventId)
+        .collection("invites")
+        .doc(guest.id)
+        .update({ token, link });
+
+      // 3. Générer la carte
+      const filePath = await generateInvitationCard(eventId, guest, qrDataUrl, link);
+
+      results.push({
+        guest: guest.name,
+        link,
+        filePath,
+      });
+    }
+
+    res.json({
+      message: "Invitations générées ✅",
+      invites: results,
+    });
+  } catch (err) {
+    console.error("Erreur generateInvitations:", err);
+    res.status(500).json({ message: err.message });
   }
 };

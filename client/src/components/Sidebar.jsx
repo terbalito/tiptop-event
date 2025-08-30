@@ -20,6 +20,7 @@ import {
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { logout } from "../services/api";
+import { People as PeopleIcon } from "@mui/icons-material"; 
 
 const Sidebar = () => {
   const theme = useTheme();
@@ -43,18 +44,25 @@ const Sidebar = () => {
     }
   };
 
-  const menuItems = [
-    {
-      text: "Dashboard",
-      icon: <DashboardIcon />,
-      onClick: () => navigate("/dashboard")
-    },
-    {
-      text: "Déconnexion",
-      icon: <LogoutIcon />,
-      onClick: handleLogout
-    }
-  ];
+
+
+const menuItems = [
+  {
+    text: "Dashboard",
+    icon: <DashboardIcon />,
+    onClick: () => navigate("/dashboard")
+  },
+  {
+    text: "Invités",
+    icon: <PeopleIcon />,
+    onClick: () => navigate("/guests")   // ✅ Nouvelle route
+  },
+  {
+    text: "Déconnexion",
+    icon: <LogoutIcon />,
+    onClick: handleLogout
+  }
+];
 
   const drawerContent = (
     <Box sx={{ width: 220, height: '100%' }}>

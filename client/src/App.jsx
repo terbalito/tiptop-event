@@ -2,6 +2,7 @@ import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Dashboard from './pages/Admin/Dashboard';
 import Login from './pages/Login';
+import GuestsPage from './pages/Admin/GuestsPage';
 
 // Nouveau composant de route privée
 const PrivateRoute = () => {
@@ -23,6 +24,12 @@ function App() {
 
         <Route path="/" element={<Navigate to="/dashboard" />} />
         <Route path="*" element={<Navigate to="/dashboard" />} />
+
+        <Route element={<PrivateRoute />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/guests" element={<GuestsPage />} /> 
+        </Route>
+
       </Routes>
     </AuthProvider>
   );

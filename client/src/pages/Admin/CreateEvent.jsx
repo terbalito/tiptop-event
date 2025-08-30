@@ -1,115 +1,68 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Button,
-  Container,
-  TextField,
-  Typography,
-  Snackbar,
-  Alert,
-  Paper,
-  List,
-  ListItem,
-  ListItemText
-} from '@mui/material';
-import { createEvent, fetchEvents } from '../../services/api';
+import { useState } from "react";
+import { Box, Paper, TextField, Button, Typography, Stack } from "@mui/material";
+import { Add as AddIcon, Event as EventIcon } from "@mui/icons-material";
+import { createEvent } from "../../services/api";
 
-const CreateEvent = () => {
-  const [name, setName] = useState('');
-  const [date, setDate] = useState('');
-  const [location, setLocation] = useState('');
-  const [events, setEvents] = useState([]);
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+export default function CreateEvent({ onEventCreated, onSnackbar }) {
+  const [form, setForm] = useState({ name: "", date: "", location: "" });
 
-  const token = localStorage.getItem('authToken');
+  const handleChange = (e) =>
+    setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
 
-  const handleCreate = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!form.name || !form.date || !form.location) {
+      onSnackbar("Tous les champs sont requis", "error");
+      return;
+    }
     try {
-      const res = await createEvent({ name, date, location }, token);
-      setSnackbar({ open: true, message: 'Evénement créé avec succès !', severity: 'success' });
-      setName('');
-      setDate('');
-      setLocation('');
-      loadEvents();
-    } catch (err) {
-      setSnackbar({ open: true, message: 'Erreur lors de la création', severity: 'error' });
+      await createEvent(form);
+      onSnackbar("Événement créé ✅", "success");
+      setForm({ name: "", date: "", location: "" });
+      onEventCreated(); // recharge la liste
+    } catch {
+      onSnackbar("Création impossible (auth ?)", "error");
     }
   };
-
-  const loadEvents = async () => {
-    try {
-      const data = await fetchEvents(token);
-      setEvents(data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  useEffect(() => {
-    loadEvents();
-  }, []);
 
   return (
-    <Container maxWidth="md">
-      <Typography variant="h4" gutterBottom sx={{ mt: 4 }}>
-        Créer un Evénement
+    <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
+      <Typography variant="h6" gutterBottom sx={{ display: "flex", alignItems: "center" }}>
+        <AddIcon sx={{ mr: 1 }} /> Créer un nouvel événement
       </Typography>
-      <Paper sx={{ p: 3, mb: 4 }}>
-        <form onSubmit={handleCreate}>
+      <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
+        <Stack spacing={2}>
           <TextField
+            name="name"
             label="Nom de l'événement"
+            value={form.name}
+            onChange={handleChange}
             fullWidth
-            sx={{ mb: 2 }}
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            required
           />
           <TextField
+            name="date"
             label="Date"
-            type="date"
+            type="datetime-local"
+            value={form.date}
+            onChange={handleChange}
             fullWidth
-            sx={{ mb: 2 }}
+            required
             InputLabelProps={{ shrink: true }}
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
           />
           <TextField
+            name="location"
             label="Lieu"
+            value={form.location}
+            onChange={handleChange}
             fullWidth
-            sx={{ mb: 2 }}
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
+            required
           />
-          <Button variant="contained" type="submit">Créer</Button>
-        </form>
-      </Paper>
-
-      <Typography variant="h5" gutterBottom>
-        Vos Evénements
-      </Typography>
-      <List>
-        {events.map((event) => (
-          <ListItem key={event.id} divider>
-            <ListItemText
-              primary={`${event.name} - ${event.date}`}
-              secondary={`Lieu: ${event.location}`}
-            />
-          </ListItem>
-        ))}
-      </List>
-
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={3000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert severity={snackbar.severity} sx={{ width: '100%' }}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
-    </Container>
+          <Button type="submit" variant="contained" size="large" startIcon={<EventIcon />}>
+            Créer l'événement
+          </Button>
+        </Stack>
+      </Box>
+    </Paper>
   );
-};
-
-export default CreateEvent;
+}

@@ -29,7 +29,6 @@ app.use(morgan('dev'));
 // Route d'auth
 app.use('/api/auth', authRoutes); 
 
-// Test route
 app.get('/', (req, res) => {
   res.send('🚀 TipTop Event Backend is alive!');
 });
