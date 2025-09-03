@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Carte d'invitation</title>
+  <style>
+    body {
+      font-family: 'Georgia', serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #f5f0eb;
+      height: 100vh;
+    }
+
+    .card {
+      width: 500px;
+      background: white;
+      border: 2px solid #d4af37; /* doré */
+      padding: 40px;
+      text-align: center;
+      border-radius: 20px;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+      background-image: url('https://i.imgur.com/tDYOuDr.png'); /* motif chic semi-transparent */
+      background-size: cover;
+      background-blend-mode: lighten;
+    }
+
+    h1 {
+      font-size: 28px;
+      color: #333;
+      margin-bottom: 20px;
+      font-family: 'Cursive', serif;
+    }
+
+    .details {
+      font-size: 18px;
+      margin: 10px 0;
+      color: #444;
+    }
+
+    .highlight {
+      font-weight: bold;
+      color: #b8860b; /* doré foncé */
+    }
+
+    .footer {
+      margin-top: 20px;
+      font-size: 14px;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>✨ Invitation Spéciale ✨</h1>
+
+    <p class="details">Email : <span class="highlight">invité@email.com</span></p>
+    <p class="details">Table : <span class="highlight">12</span></p>
+    <p class="details">Date : <span class="highlight">15 Septembre 2025</span></p>
+    <p class="details">Heure : <span class="highlight">19h00</span></p>
+
+    <div class="footer">Merci de présenter cette invitation à l’entrée</div>
+  </div>
+</body>
+</html>

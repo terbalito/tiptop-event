@@ -3,10 +3,14 @@ import { parseExcel } from "../utils/excelParser.js";
 import admin from "../services/firebase.js";
 import fs from "fs";
 import { generateInvitationCard } from "../services/imageGenerator.js";
-import { generateInviteQR } from "../services/qrCodeService.js"; // 👈 NEW
+import { generateInviteQR } from "../services/qrCodeService.js"; 
+
+import { generateInvitationPdf } from "../services/pdfGenerator.js";
+
 
 const db = admin.firestore();
 
+/** Upload Excel -> écrit les invités (inchangé sauf commentaires) */
 export const uploadInvites = async (req, res) => {
   try {
     const { eventId } = req.params;
@@ -32,6 +36,7 @@ export const uploadInvites = async (req, res) => {
           Math.random().toString(36).substring(2, 8).toUpperCase(),
         scanned: false,
         deviceId: null,        // pour l’anti-fraude plus tard
+        devices: [],           // tableau d'appareils (multi)
         link: null,            // rempli à la génération
         tokenHash: null,       // rempli à la génération (jamais le token en clair)
         cardUrl: null,         // URL publique de la carte PNG
@@ -49,6 +54,7 @@ export const uploadInvites = async (req, res) => {
   }
 };
 
+/** Retourne tous les invites pour un event */
 export const getInvitesByEvent = async (req, res) => {
   try {
     const { eventId } = req.params;
@@ -71,6 +77,7 @@ export const getInvitesByEvent = async (req, res) => {
   }
 };
 
+/** Retourne le compte d'invités pour un event */
 export const getInvitesCount = async (req, res) => {
   try {
     const { eventId } = req.params;
@@ -87,7 +94,7 @@ export const getInvitesCount = async (req, res) => {
   }
 };
 
-// 👇 Génère lien + QR + carte pour TOUT l’event
+/** Génère lien + QR + carte PNG pour tous les invités d'un event */
 export const generateInvitations = async (req, res) => {
   try {
     const { eventId } = req.params;
@@ -107,13 +114,10 @@ export const generateInvitations = async (req, res) => {
     for (const d of snapshot.docs) {
       const guest = { id: d.id, ...d.data() };
 
-      // Skip si déjà généré (optionnel)
-      // if (guest.link && guest.cardUrl && guest.tokenHash) { ... }
-
-      // 1) QR + lien unique
+      // 1) QR + lien unique (service doit renvoyer qrDataUrl (dataURL), tokenHash, link)
       const { qrDataUrl, tokenHash, link } = await generateInviteQR(eventId, guest.id);
 
-      // 2) Générer la carte PNG
+      // 2) Générer la carte PNG (imageGenerator renvoie un chemin relatif public)
       const cardUrl = await generateInvitationCard(eventId, guest, qrDataUrl, link);
 
       // 3) Sauvegarder en base (ne stocke que le hash du token)
@@ -144,5 +148,120 @@ export const generateInvitations = async (req, res) => {
   } catch (err) {
     console.error("Erreur generateInvitations:", err);
     res.status(500).json({ message: err.message });
+  }
+};
+
+/* ---------------------------
+   NOUVEAUX ENDPOINTS PUBLICS
+   --------------------------- */
+
+/**
+ * Retourne un invité à partir de son inviteId (cherche dans collectionGroup 'invites').
+ * Renvoie aussi l'eventId parent pour affichage.
+ */
+export const getInviteById = async (req, res) => {
+  try {
+    const { inviteId } = req.params;
+
+    // CollectionGroup "invites"
+    const q = await db.collectionGroup("invites").get();
+
+    // Filtrer manuellement sur doc.id
+    const doc = q.docs.find(d => d.id === inviteId);
+
+    if (!doc) return res.status(404).json({ message: "Invité introuvable" });
+
+    const data = doc.data();
+    const eventDocRef = doc.ref.parent.parent;
+    const eventId = eventDocRef ? eventDocRef.id : null;
+
+    let eventData = null;
+    if (eventId) {
+      const ev = await db.collection("events").doc(eventId).get();
+      if (ev.exists) eventData = { id: ev.id, ...ev.data() };
+    }
+
+    res.json({
+      id: doc.id,
+      ...data,
+      event: eventData,
+      eventId,
+    });
+  } catch (error) {
+    console.error("Erreur getInviteById:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
+/**
+ * Enregistre un deviceId pour un invité (anti-fraude).
+ * Expose : POST /api/invites/invite/:inviteId/register-device  { deviceId }
+ *
+ * On stocke en array 'devices' (arrayUnion) et on met aussi deviceId (dernier)
+ */
+export const registerDevice = async (req, res) => {
+  try {
+    const { inviteId } = req.params;
+    const { deviceId } = req.body;
+
+    if (!deviceId) return res.status(400).json({ message: "deviceId manquant" });
+
+    // Cherche doc invite via collectionGroup
+    const q = await db.collectionGroup("invites").where("__name__", "==", inviteId).get();
+    if (q.empty) return res.status(404).json({ message: "Invité introuvable" });
+
+    const docRef = q.docs[0].ref;
+
+    // Ajoute deviceId à la liste (évite doublons) et met deviceId (dernier) — admin.firestore.FieldValue.arrayUnion
+    await docRef.update({
+      devices: admin.firestore.FieldValue.arrayUnion(deviceId),
+      deviceId, // garde aussi un champ deviceId (optionnel)
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Erreur registerDevice:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
+
+
+export const downloadInvitationPdf = async (req, res) => {
+  try {
+    const { eventId, inviteId } = req.params;
+    const token = req.query.t;
+
+    // Vérif du hash en DB
+    const doc = await db
+      .collection("events")
+      .doc(eventId)
+      .collection("invites")
+      .doc(inviteId)
+      .get();
+
+    if (!doc.exists) return res.status(404).json({ error: "Invite not found" });
+
+    const invite = doc.data();
+    const hash = require("crypto").createHash("sha256").update(token).digest("hex");
+
+    if (hash !== invite.tokenHash) {
+      return res.status(401).json({ error: "Token invalide" });
+    }
+
+    const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+    const invitationUrl = `${clientUrl}/invite/${eventId}/${inviteId}?t=${token}&admin=true`;
+
+    const pdfBuffer = await generateInvitationPdf(invitationUrl);
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="invitation_${inviteId}.pdf"`);
+    res.send(pdfBuffer);
+  } catch (err) {
+    console.error("Erreur downloadInvitationPdf:", err);
+    res.status(500).json({ error: "Erreur lors de la génération du PDF" });
   }
 };

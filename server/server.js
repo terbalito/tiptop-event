@@ -1,4 +1,4 @@
-// server/server.js (ajoute juste la partie static si pas encore fait)
+// server/server.js
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -26,11 +26,31 @@ app.use('/api/auth', authRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/invites', inviteRoutes);
 
-// 👇 servir les images générées
-app.use(
-  '/generated',
-  express.static(path.join(process.cwd(), 'server', 'generated'))
-);
+// 👇 CORRECTION ICI - Chemin absolu pour les fichiers générés
+const generatedDir = path.join(process.cwd(), 'server', 'generated');
+if (!fs.existsSync(generatedDir)) {
+  fs.mkdirSync(generatedDir, { recursive: true });
+}
+
+// Servir les images générées
+app.use('/generated', express.static(generatedDir));
+
+// Route pour télécharger les images
+app.get('/download/:eventId/:filename', (req, res) => {
+  const { eventId, filename } = req.params;
+  const filePath = path.join(generatedDir, eventId, filename);
+  
+  if (fs.existsSync(filePath)) {
+    res.download(filePath, `${filename}`, (err) => {
+      if (err) {
+        console.error('Erreur téléchargement:', err);
+        res.status(500).send('Erreur lors du téléchargement');
+      }
+    });
+  } else {
+    res.status(404).send('Fichier non trouvé');
+  }
+});
 
 app.get('/', (req, res) => {
   res.send('🚀 TipTop Event Backend is alive!');
@@ -39,7 +59,7 @@ app.get('/', (req, res) => {
 // Créer le dossier uploads si pas là
 const uploadsDir = path.join(process.cwd(), 'uploads');
 if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir);
+  fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
 app.listen(PORT, () => {

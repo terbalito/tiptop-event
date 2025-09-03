@@ -1,30 +1,39 @@
+// server/routes/invite.js
 import express from "express";
 import multer from "multer";
-import { uploadInvites, getInvitesByEvent, getInvitesCount } from "../controllers/inviteController.js";
-import  authMiddleware  from "../middleware/authMiddleware.js";
-import { generateInvitations } from "../controllers/inviteController.js";
+import {
+  uploadInvites,
+  getInvitesByEvent,
+  getInvitesCount,
+  generateInvitations,
+  getInviteById,
+  registerDevice,
+  downloadInvitationPdf
+} from "../controllers/inviteController.js";
+import authMiddleware from "../middleware/authMiddleware.js";
 
 const router = express.Router();
-
-// config multer
 const upload = multer({ dest: "server/uploads/" });
 
-// Upload Excel
-router.post(
-  "/upload/:eventId",
-  authMiddleware,
-  upload.single("file"),
-  uploadInvites
-);
+// Upload Excel (protégé)
+router.post("/upload/:eventId", authMiddleware, upload.single("file"), uploadInvites);
 
-// Lister invités d'un event
+// Lister invités d'un event (protégé)
 router.get("/:eventId", authMiddleware, getInvitesByEvent);
 
-// Obtenir le compteur d'invités d'un event
+// Compte d'invités (protégé)
 router.get("/:eventId/count", authMiddleware, getInvitesCount);
 
-
-
+// Générer cartes (protégé)
 router.post("/:eventId/generate-cards", authMiddleware, generateInvitations);
+
+// PUBLIC : obtenir un invité par inviteId (pas besoin d'auth pour page publique)
+router.get("/invite/:inviteId", getInviteById);
+
+// PUBLIC : enregistrer deviceId (l'invité)
+router.post("/invite/:inviteId/register-device", registerDevice);
+
+
+router.get("/:eventId/:inviteId/pdf", downloadInvitationPdf);
 
 export default router;

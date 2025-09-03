@@ -17,8 +17,11 @@ import {
   Alert,
   IconButton,
   Tooltip,
+  Chip,
 } from "@mui/material";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import DownloadIcon from "@mui/icons-material/Download";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 
 export default function GuestsPage() {
   const [events, setEvents] = useState([]);
@@ -65,7 +68,7 @@ export default function GuestsPage() {
       setLoadingGen(true);
       const res = await generateCards(selectedEvent);
       setSnackbar({ open: true, message: res.message || "Cartes générées", severity: "success" });
-      await loadInvites(); // rafraîchir (link + cardUrl)
+      await loadInvites();
     } catch (err) {
       console.error(err);
       setSnackbar({ open: true, message: "Échec de la génération", severity: "error" });
@@ -82,6 +85,35 @@ export default function GuestsPage() {
       setSnackbar({ open: true, message: "Impossible de copier", severity: "error" });
     }
   };
+
+  const downloadImage = (cardUrl, name) => {
+    if (!cardUrl) return;
+    
+    // Convertir l'URL relative en URL absolue
+    const absoluteUrl = `http://localhost:4000${cardUrl}`;
+    const downloadUrl = `http://localhost:4000/download/${cardUrl.split('/').slice(2).join('/')}`;
+    
+    // Ouvrir dans un nouvel onglet pour visualisation
+    window.open(absoluteUrl, '_blank');
+    
+    // Téléchargement automatique
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = `${name}_invitation.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+const viewInvitationPage = (invite) => {
+  if (!invite.link) return;
+  
+  // ⚡ Si admin : on ajoute ?admin=true pour afficher la page avec contrôle admin
+  // on génère le lien côté frontend
+  const frontendUrl = `${window.location.origin}/invite/${invite.id}?admin=true`;
+  window.open(frontendUrl, "_blank");
+};
+
 
   return (
     <Paper sx={{ p: 3 }}>
@@ -116,26 +148,55 @@ export default function GuestsPage() {
               <ListItem alignItems="flex-start" sx={{ gap: 2 }}>
                 <ListItemText
                   primary={invite.name}
-                  secondary={`Email: ${invite.email || "N/A"} • Statut: ${
-                    invite.scanned ? "Scanné ✅" : "Non scanné ❌"
-                  }`}
+                  secondary={
+                    <Box>
+                      <div>Email: {invite.email || "N/A"}</div>
+                      <div>Téléphone: {invite.phone || "N/A"}</div>
+                      <div>Table: {invite.tableNumber || "N/A"}</div>
+                      <Chip 
+                        label={invite.scanned ? "Scanné ✅" : "Non scanné ❌"} 
+                        size="small" 
+                        color={invite.scanned ? "success" : "default"}
+                        sx={{ mt: 0.5 }}
+                      />
+                    </Box>
+                  }
                 />
-                {/* Aperçu carte si dispo */}
-                {invite.cardUrl ? (
-                  <Box sx={{ width: 160, img: { width: "100%", borderRadius: 1, border: "1px solid #eee" } }}>
-                    <img src={invite.cardUrl} alt={`Carte ${invite.name}`} />
-                  </Box>
-                ) : (
-                  <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                    (Pas encore générée)
-                  </Typography>
-                )}
+                
+                {/* Actions */}
+                <Stack direction="column" spacing={1} alignItems="center">
+                  {invite.cardUrl ? (
+                    <>
+                      <Tooltip title="Voir l'invitation">
+                        <IconButton onClick={() => viewInvitationPage(invite)} color="primary">
+                          <VisibilityIcon />
+                        </IconButton>
+                      </Tooltip>
+
+
+                      <Tooltip title="Télécharger">
+                        <IconButton onClick={() => downloadImage(invite.cardUrl, invite.name)} color="secondary">
+                          <DownloadIcon />
+                        </IconButton>
+                      </Tooltip>
+                    </>
+                  ) : (
+                    <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                      (Pas générée)
+                    </Typography>
+                  )}
+                </Stack>
 
                 {/* Lien + copier */}
-                <Stack direction="row" alignItems="center" spacing={1}>
+                <Stack direction="row" alignItems="center" spacing={1} sx={{ minWidth: 300 }}>
                   {invite.link ? (
                     <>
-                      <Typography variant="body2" sx={{ maxWidth: 280, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      <Typography variant="body2" sx={{ 
+                        maxWidth: 250, 
+                        overflow: "hidden", 
+                        textOverflow: "ellipsis", 
+                        whiteSpace: "nowrap" 
+                      }}>
                         {invite.link}
                       </Typography>
                       <Tooltip title="Copier le lien">
