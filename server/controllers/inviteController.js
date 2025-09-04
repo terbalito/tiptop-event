@@ -5,6 +5,7 @@ import fs from "fs";
 import { generateInvitationCard } from "../services/imageGenerator.js";
 import { generateInviteQR } from "../services/qrCodeService.js"; 
 
+
 import { generateInvitationPdf } from "../services/pdfGenerator.js";
 
 
@@ -155,36 +156,24 @@ export const generateInvitations = async (req, res) => {
    NOUVEAUX ENDPOINTS PUBLICS
    --------------------------- */
 
-/**
- * Retourne un invité à partir de son inviteId (cherche dans collectionGroup 'invites').
- * Renvoie aussi l'eventId parent pour affichage.
- */
 export const getInviteById = async (req, res) => {
   try {
-    const { inviteId } = req.params;
+    const { eventId, inviteId } = req.params;
 
-    // CollectionGroup "invites"
-    const q = await db.collectionGroup("invites").get();
+    const doc = await db
+      .collection("events")
+      .doc(eventId)
+      .collection("invites")
+      .doc(inviteId)
+      .get();
 
-    // Filtrer manuellement sur doc.id
-    const doc = q.docs.find(d => d.id === inviteId);
-
-    if (!doc) return res.status(404).json({ message: "Invité introuvable" });
-
-    const data = doc.data();
-    const eventDocRef = doc.ref.parent.parent;
-    const eventId = eventDocRef ? eventDocRef.id : null;
-
-    let eventData = null;
-    if (eventId) {
-      const ev = await db.collection("events").doc(eventId).get();
-      if (ev.exists) eventData = { id: ev.id, ...ev.data() };
+    if (!doc.exists) {
+      return res.status(404).json({ message: "Invité introuvable" });
     }
 
     res.json({
       id: doc.id,
-      ...data,
-      event: eventData,
+      ...doc.data(),
       eventId,
     });
   } catch (error) {
@@ -193,31 +182,26 @@ export const getInviteById = async (req, res) => {
   }
 };
 
-
-/**
- * Enregistre un deviceId pour un invité (anti-fraude).
- * Expose : POST /api/invites/invite/:inviteId/register-device  { deviceId }
- *
- * On stocke en array 'devices' (arrayUnion) et on met aussi deviceId (dernier)
- */
+// ✅ Enregistrer un device pour un invité
 export const registerDevice = async (req, res) => {
   try {
-    const { inviteId } = req.params;
+    const { eventId, inviteId } = req.params;
     const { deviceId } = req.body;
 
-    if (!deviceId) return res.status(400).json({ message: "deviceId manquant" });
+    const inviteRef = db
+      .collection("events")
+      .doc(eventId)
+      .collection("invites")
+      .doc(inviteId);
 
-    // Cherche doc invite via collectionGroup
-    const q = await db.collectionGroup("invites").where("__name__", "==", inviteId).get();
-    if (q.empty) return res.status(404).json({ message: "Invité introuvable" });
+    const doc = await inviteRef.get();
+    if (!doc.exists) {
+      return res.status(404).json({ message: "Invité introuvable" });
+    }
 
-    const docRef = q.docs[0].ref;
-
-    // Ajoute deviceId à la liste (évite doublons) et met deviceId (dernier) — admin.firestore.FieldValue.arrayUnion
-    await docRef.update({
-      devices: admin.firestore.FieldValue.arrayUnion(deviceId),
-      deviceId, // garde aussi un champ deviceId (optionnel)
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    await inviteRef.update({
+      registeredDevice: deviceId,
+      registeredAt: new Date().toISOString(),
     });
 
     res.json({ success: true });
@@ -226,7 +210,6 @@ export const registerDevice = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
 
 
 

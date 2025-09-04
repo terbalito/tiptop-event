@@ -55,14 +55,25 @@ export const logout = async () => {
   try { await api.post("/auth/logout"); } catch {}
 };
 
-export const fetchInviteById = async (inviteId) => {
-  const { data } = await api.get(`/invites/invite/${inviteId}`); // public
-  return data;
-};
 
-export const registerDeviceForInvite = async (inviteId, deviceId) => {
-  const { data } = await api.post(`/invites/invite/${inviteId}/register-device`, { deviceId });
-  return data;
-};
+
+
+
+// ✅ bien mettre eventId dans l’URL
+export const fetchInviteById = (eventId, inviteId) =>
+  api.get(`/invites/${eventId}/invites/${inviteId}`).then(res => res.data);
+
+
+export const registerDeviceForInvite = (eventId, inviteId, deviceId) =>
+  api.post(`/events/${eventId}/invites/${inviteId}/register`, { deviceId });
+
+// Exemple : récupérer un invité
+export const getInviteById = (eventId, inviteId) =>
+  api.get(`/events/${eventId}/invites/${inviteId}`);
+
+// Exemple : enregistrer un device
+export const registerDevice = (eventId, inviteId, deviceId) =>
+  api.post(`/events/${eventId}/invites/${inviteId}/register`, { deviceId });
+
 
 export default api;

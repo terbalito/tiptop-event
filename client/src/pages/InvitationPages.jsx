@@ -29,7 +29,7 @@ function generateDeviceId() {
 }
 
 export default function InvitationPage() {
-  const { inviteId } = useParams();
+  const { eventId, inviteId } = useParams();
   const [searchParams] = useSearchParams();
   const [invite, setInvite] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -41,7 +41,7 @@ export default function InvitationPage() {
     const load = async () => {
       setLoading(true);
       try {
-        const data = await fetchInviteById(inviteId);
+        const data = await fetchInviteById(eventId, inviteId);
         setInvite(data);
 
         if (!isAdminView) {
@@ -51,7 +51,7 @@ export default function InvitationPage() {
             localStorage.setItem("deviceId_for_invite", deviceId);
           }
           try {
-            await registerDeviceForInvite(inviteId, deviceId);
+            await registerDeviceForInvite(eventId, inviteId, deviceId);
           } catch (err) {
             console.warn("Register device error:", err);
           }

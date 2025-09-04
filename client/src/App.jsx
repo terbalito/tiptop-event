@@ -20,7 +20,8 @@ function App() {
       <Routes>
         {/* Public */}
         <Route path="/login" element={<Login />} />
-        <Route path="/invite/:inviteId" element={<InvitationPages />} />
+        <Route path="/invite/:eventId/:inviteId" element={<InvitationPages />} />
+
 
 
         {/* Privées */}

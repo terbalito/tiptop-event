@@ -28,11 +28,10 @@ router.get("/:eventId/count", authMiddleware, getInvitesCount);
 router.post("/:eventId/generate-cards", authMiddleware, generateInvitations);
 
 // PUBLIC : obtenir un invité par inviteId (pas besoin d'auth pour page publique)
-router.get("/invite/:inviteId", getInviteById);
+router.get("/:eventId/invites/:inviteId", getInviteById);
 
 // PUBLIC : enregistrer deviceId (l'invité)
-router.post("/invite/:inviteId/register-device", registerDevice);
-
+router.post("/:eventId/invites/:inviteId/register", registerDevice);
 
 router.get("/:eventId/:inviteId/pdf", downloadInvitationPdf);
 

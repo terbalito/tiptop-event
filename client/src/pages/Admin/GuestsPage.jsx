@@ -106,13 +106,13 @@ export default function GuestsPage() {
   };
 
 const viewInvitationPage = (invite) => {
-  if (!invite.link) return;
-  
-  // ⚡ Si admin : on ajoute ?admin=true pour afficher la page avec contrôle admin
-  // on génère le lien côté frontend
-  const frontendUrl = `${window.location.origin}/invite/${invite.id}?admin=true`;
+  if (!invite.id || !selectedEvent) return;
+
+  // ⚡ Inclure eventId dans l’URL
+  const frontendUrl = `${window.location.origin}/invite/${selectedEvent}/${invite.id}?admin=true`;
   window.open(frontendUrl, "_blank");
 };
+
 
 
   return (
