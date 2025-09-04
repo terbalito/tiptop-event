@@ -22,11 +22,13 @@ import {
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import DownloadIcon from "@mui/icons-material/Download";
 import VisibilityIcon from "@mui/icons-material/Visibility";
+import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
 
 export default function GuestsPage() {
   const [events, setEvents] = useState([]);
   const [selectedEvent, setSelectedEvent] = useState("");
   const [invites, setInvites] = useState([]);
+  const [adminTokens, setAdminTokens] = useState({});
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
   const [loadingGen, setLoadingGen] = useState(false);
 
@@ -67,6 +69,14 @@ export default function GuestsPage() {
     try {
       setLoadingGen(true);
       const res = await generateCards(selectedEvent);
+      
+      // Stocker les tokens admin dans le state
+      const tokens = {};
+      res.invites.forEach(invite => {
+        tokens[invite.id] = invite.adminToken;
+      });
+      setAdminTokens(tokens);
+      
       setSnackbar({ open: true, message: res.message || "Cartes générées", severity: "success" });
       await loadInvites();
     } catch (err) {
@@ -76,6 +86,20 @@ export default function GuestsPage() {
       setLoadingGen(false);
     }
   };
+  
+
+  const downloadPdf = (inviteId) => {
+    const token = adminTokens[inviteId];
+    if (!token) {
+      setSnackbar({ open: true, message: "Générez d'abord les invitations pour avoir le PDF", severity: "warning" });
+      return;
+    }
+    
+    const url = `http://localhost:4000/api/invites/${selectedEvent}/${inviteId}/pdf?t=${token}`;
+    window.open(url, "_blank");
+  };
+
+
 
   const copy = async (text) => {
     try {
@@ -143,9 +167,9 @@ const viewInvitationPage = (invite) => {
         <Typography>Aucun invité pour cet événement.</Typography>
       ) : (
         <List>
-          {invites.map((invite) => (
-            <Box key={invite.id}>
-              <ListItem alignItems="flex-start" sx={{ gap: 2 }}>
+        {invites.map((invite) => (
+          <Box key={invite.id}>
+            <ListItem alignItems="flex-start" sx={{ gap: 2 }}>
                 <ListItemText
                   primary={invite.name}
                   secondary={
@@ -173,10 +197,15 @@ const viewInvitationPage = (invite) => {
                         </IconButton>
                       </Tooltip>
 
-
-                      <Tooltip title="Télécharger">
+                      <Tooltip title="Télécharger PNG">
                         <IconButton onClick={() => downloadImage(invite.cardUrl, invite.name)} color="secondary">
                           <DownloadIcon />
+                        </IconButton>
+                      </Tooltip>
+
+                      <Tooltip title="Télécharger PDF">
+                        <IconButton onClick={() => downloadPdf(invite.id)} color="primary">
+                          <PictureAsPdfIcon />
                         </IconButton>
                       </Tooltip>
                     </>

@@ -1,15 +1,19 @@
 // server/controllers/inviteController.js
+import crypto from "crypto";
 import { parseExcel } from "../utils/excelParser.js";
 import admin from "../services/firebase.js";
 import fs from "fs";
 import { generateInvitationCard } from "../services/imageGenerator.js";
-import { generateInviteQR } from "../services/qrCodeService.js"; 
-
-
+import { generateInviteQR } from "../services/qrCodeService.js";
 import { generateInvitationPdf } from "../services/pdfGenerator.js";
 
 
 const db = admin.firestore();
+
+// Fonction pour générer un token admin
+const generateAdminToken = () => {
+  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+};
 
 /** Upload Excel -> écrit les invités (inchangé sauf commentaires) */
 export const uploadInvites = async (req, res) => {
@@ -95,6 +99,8 @@ export const getInvitesCount = async (req, res) => {
   }
 };
 
+
+
 /** Génère lien + QR + carte PNG pour tous les invités d'un event */
 export const generateInvitations = async (req, res) => {
   try {
@@ -115,13 +121,17 @@ export const generateInvitations = async (req, res) => {
     for (const d of snapshot.docs) {
       const guest = { id: d.id, ...d.data() };
 
-      // 1) QR + lien unique (service doit renvoyer qrDataUrl (dataURL), tokenHash, link)
+      // 1) QR + lien unique
       const { qrDataUrl, tokenHash, link } = await generateInviteQR(eventId, guest.id);
 
-      // 2) Générer la carte PNG (imageGenerator renvoie un chemin relatif public)
+      // 2) Générer un token admin
+      const adminToken = generateAdminToken();
+      const adminTokenHash = crypto.createHash("sha256").update(adminToken).digest("hex");
+
+      // 3) Générer la carte PNG
       const cardUrl = await generateInvitationCard(eventId, guest, qrDataUrl, link);
 
-      // 3) Sauvegarder en base (ne stocke que le hash du token)
+      // 4) Sauvegarder en base avec les deux tokens
       await db
         .collection("events")
         .doc(eventId)
@@ -129,6 +139,7 @@ export const generateInvitations = async (req, res) => {
         .doc(guest.id)
         .update({
           tokenHash,
+          adminTokenHash, // Stocker le hash du token admin
           link,
           cardUrl,
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -139,6 +150,7 @@ export const generateInvitations = async (req, res) => {
         name: guest.name,
         link,
         cardUrl,
+        adminToken, // Renvoyer le token en clair pour l'admin
       });
     }
 
@@ -229,16 +241,33 @@ export const downloadInvitationPdf = async (req, res) => {
     if (!doc.exists) return res.status(404).json({ error: "Invite not found" });
 
     const invite = doc.data();
-    const hash = require("crypto").createHash("sha256").update(token).digest("hex");
+    
+    // Vérifier soit le token normal soit le token admin
+    const hash = crypto.createHash("sha256").update(token).digest("hex");
+    const isValidToken = hash === invite.tokenHash || hash === invite.adminTokenHash;
 
-    if (hash !== invite.tokenHash) {
+    if (!isValidToken) {
       return res.status(401).json({ error: "Token invalide" });
     }
 
-    const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
-    const invitationUrl = `${clientUrl}/invite/${eventId}/${inviteId}?t=${token}&admin=true`;
+    // Récupérer les infos de l'événement
+    const eventDoc = await db.collection("events").doc(eventId).get();
+    const eventData = eventDoc.exists ? eventDoc.data() : {};
 
-    const pdfBuffer = await generateInvitationPdf(invitationUrl);
+    // Préparer les données pour le PDF
+    const pdfData = {
+      name: invite.name,
+      email: invite.email,
+      tableNumber: invite.tableNumber,
+      link: invite.link,
+      event: {
+        name: eventData.name,
+        date: eventData.date,
+        location: eventData.location
+      }
+    };
+
+    const pdfBuffer = await generateInvitationPdf(pdfData);
 
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename="invitation_${inviteId}.pdf"`);

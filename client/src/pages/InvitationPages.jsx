@@ -82,7 +82,13 @@ export default function InvitationPage() {
   };
 
   const handleDownloadPdf = () => {
-    const url = `${BACKEND_BASE}/api/invites/${invite.eventId}/${invite.id}/pdf?t=${searchParams.get("t")}`;
+    const token = searchParams.get("t");
+    if (!token || token === "null") {
+      setSnackbar({ open: true, message: "Token manquant pour le PDF", severity: "warning" });
+      return;
+    }
+    
+    const url = `${BACKEND_BASE}/api/invites/${invite.eventId}/${invite.id}/pdf?t=${token}`;
     window.open(url, "_blank");
   };
 
