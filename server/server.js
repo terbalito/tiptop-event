@@ -9,10 +9,15 @@ import cookieParser from 'cookie-parser';
 import authRoutes from './routes/auth.js';
 import eventRoutes from './routes/event.js';
 import inviteRoutes from './routes/invites.js';
+import controllerRoutes from "./routes/controller.js";
+import { initSocket } from "./socket/index.js";
+import http from "http";
 
 dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 4000;
+const server = http.createServer(app);
+const io = initSocket(server);
 
 app.use(cors({
   origin: "http://localhost:5173",
@@ -21,6 +26,12 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 app.use(morgan('dev'));
+
+// Middleware pour injecter io dans req
+app.use((req, res, next) => {
+  req.io = io;
+  next();
+});
 
 app.use('/api/auth', authRoutes);
 app.use('/api/events', eventRoutes);
@@ -61,6 +72,9 @@ const uploadsDir = path.join(process.cwd(), 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
+
+
+app.use("/api/controllers", controllerRoutes);
 
 app.listen(PORT, () => {
   console.log(`✅ Server running on http://localhost:${PORT}`);

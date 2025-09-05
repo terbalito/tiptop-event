@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import GuestsPage from './pages/Admin/GuestsPage';
 import Layout from './components/Layout';
 import InvitationPages from './pages/InvitationPages';
+import ControllersPage from "./pages/Admin/ControllersPage";
 
 // Composant de route privée
 const PrivateRoute = () => {
@@ -29,6 +30,8 @@ function App() {
           <Route element={<Layout />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/guests" element={<GuestsPage />} />
+            <Route path="/controllers" element={<ControllersPage />} />
+
           </Route>
         </Route>
 

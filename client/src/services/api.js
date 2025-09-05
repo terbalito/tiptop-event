@@ -82,5 +82,21 @@ export const downloadInvitationPdf = (eventId, inviteId, token) => {
   });
 };
 
+export const scanInvite = async (eventId, inviteId) => {
+  const res = await axios.post(`${API_URL}/scan/${eventId}/${inviteId}`, {}, { withCredentials: true });
+  return res.data;
+};
+
+// Contrôleurs
+export const fetchControllers = async () => {
+  const res = await api.get("/controllers");
+  return res.data;
+};
+
+export const createController = async () => {
+  const res = await api.post("/controllers");
+  return res.data;
+};
+
 
 export default api;

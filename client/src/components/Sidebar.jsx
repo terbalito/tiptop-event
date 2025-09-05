@@ -1,3 +1,4 @@
+// Sidebar.jsx (Corrected Code)
 import React, { useState } from "react";
 import {
   Drawer,
@@ -11,16 +12,17 @@ import {
   useTheme,
   IconButton,
   Divider
-} from "@mui/material";
+} from "@mui/material"; // 👈 'BadgeIcon' has been removed
 import {
   Dashboard as DashboardIcon,
   ExitToApp as LogoutIcon,
   Menu as MenuIcon,
-  Close as CloseIcon
+  Close as CloseIcon,
+  People as PeopleIcon, // This was already here
+  Security as SecurityIcon // 👈 Add the missing Security icon
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { logout } from "../services/api";
-import { People as PeopleIcon } from "@mui/icons-material"; 
 
 const Sidebar = () => {
   const theme = useTheme();
@@ -44,33 +46,36 @@ const Sidebar = () => {
     }
   };
 
-
-
-const menuItems = [
-  {
-    text: "Dashboard",
-    icon: <DashboardIcon />,
-    onClick: () => navigate("/dashboard")
-  },
-  {
-    text: "Invités",
-    icon: <PeopleIcon />,
-    onClick: () => navigate("/guests")   // ✅ Nouvelle route
-  },
-  {
-    text: "Déconnexion",
-    icon: <LogoutIcon />,
-    onClick: handleLogout
-  }
-];
+  const menuItems = [
+    {
+      text: "Dashboard",
+      icon: <DashboardIcon />,
+      onClick: () => navigate("/dashboard")
+    },
+    {
+      text: "Invités",
+      icon: <PeopleIcon />,
+      onClick: () => navigate("/guests")
+    },
+    {
+      text: "Contrôleurs",
+      icon: <SecurityIcon />, // 👈 The icon is now available
+      onClick: () => navigate("/controllers")
+    },
+    {
+      text: "Déconnexion",
+      icon: <LogoutIcon />,
+      onClick: handleLogout
+    }
+  ];
 
   const drawerContent = (
     <Box sx={{ width: 220, height: '100%' }}>
-      {/* Header de la sidebar */}
+      {/* ... (rest of the drawer content remains the same) */}
       <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Typography 
-          variant="h6" 
-          sx={{ 
+        <Typography
+          variant="h6"
+          sx={{
             fontWeight: 700,
             background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
             backgroundClip: 'text',
@@ -113,8 +118,8 @@ const menuItems = [
             <ListItemIcon sx={{ color: theme.palette.primary.main }}>
               {item.icon}
             </ListItemIcon>
-            <ListItemText 
-              primary={item.text} 
+            <ListItemText
+              primary={item.text}
               sx={{
                 '& .MuiListItemText-primary': {
                   fontWeight: 500
@@ -164,8 +169,8 @@ const menuItems = [
           '& .MuiDrawer-paper': {
             width: 240,
             boxSizing: 'border-box',
-            backgroundColor: theme.palette.mode === 'dark' 
-              ? theme.palette.background.default 
+            backgroundColor: theme.palette.mode === 'dark'
+              ? theme.palette.background.default
               : theme.palette.background.paper,
             borderRight: `1px solid ${theme.palette.divider}`,
             backgroundImage: 'none'
