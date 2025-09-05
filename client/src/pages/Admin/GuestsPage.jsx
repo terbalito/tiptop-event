@@ -48,6 +48,14 @@ export default function GuestsPage() {
     loadEvents();
   }, []);
 
+   // Charger les tokens depuis le localStorage au démarrage
+  useEffect(() => {
+    const savedTokens = localStorage.getItem(`adminTokens_${selectedEvent}`);
+    if (savedTokens) {
+      setAdminTokens(JSON.parse(savedTokens));
+    }
+  }, [selectedEvent]);
+
   const loadInvites = async () => {
     if (!selectedEvent) return;
     try {
@@ -70,12 +78,15 @@ export default function GuestsPage() {
       setLoadingGen(true);
       const res = await generateCards(selectedEvent);
       
-      // Stocker les tokens admin dans le state
+      // Stocker les tokens admin dans le state et localStorage
       const tokens = {};
       res.invites.forEach(invite => {
         tokens[invite.id] = invite.adminToken;
       });
       setAdminTokens(tokens);
+      
+      // Sauvegarder dans localStorage
+      localStorage.setItem(`adminTokens_${selectedEvent}`, JSON.stringify(tokens));
       
       setSnackbar({ open: true, message: res.message || "Cartes générées", severity: "success" });
       await loadInvites();
@@ -87,6 +98,7 @@ export default function GuestsPage() {
     }
   };
   
+
 
   const downloadPdf = (inviteId) => {
     const token = adminTokens[inviteId];

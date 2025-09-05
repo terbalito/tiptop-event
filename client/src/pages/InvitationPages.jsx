@@ -3,7 +3,6 @@ import React, { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import {
   Container,
-  Paper,
   Typography,
   Box,
   Button,
@@ -28,11 +27,16 @@ function generateDeviceId() {
   return `dv_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function generateClientToken(deviceId) {
+  return btoa(deviceId + ':' + Date.now());
+}
+
 export default function InvitationPage() {
   const { eventId, inviteId } = useParams();
   const [searchParams] = useSearchParams();
   const [invite, setInvite] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [clientToken, setClientToken] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
 
   const isAdminView = searchParams.get("admin") === "true";
@@ -50,11 +54,20 @@ export default function InvitationPage() {
             deviceId = generateDeviceId();
             localStorage.setItem("deviceId_for_invite", deviceId);
           }
+          
+          const token = generateClientToken(deviceId);
+          setClientToken(token);
+          localStorage.setItem(`clientToken_${inviteId}`, token);
+          
           try {
             await registerDeviceForInvite(eventId, inviteId, deviceId);
           } catch (err) {
-            console.warn("Register device error:", err);
+            console.warn("Register device error (non bloquant):", err.message);
+            // Cette erreur n'est pas bloquante pour l'affichage
           }
+        } else {
+          const adminToken = searchParams.get("t");
+          setClientToken(adminToken);
         }
       } catch (err) {
         console.error("Erreur fetchInviteById:", err);
@@ -64,11 +77,13 @@ export default function InvitationPage() {
       }
     };
     load();
-  }, [inviteId, isAdminView]);
+  }, [inviteId, isAdminView, eventId, searchParams]);
 
   if (loading) return <Container sx={{ py: 6 }}>Chargement...</Container>;
   if (!invite) return <Container sx={{ py: 6 }}>Invitation introuvable</Container>;
 
+  // Maintenant invite est défini, on peut vérifier la date
+  const isEventPassed = invite.event ? new Date(invite.event.date) < new Date() : false;
   const qrValue = invite.link || `${window.location.origin}/invitation/${invite.id}`;
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrValue)}`;
 
@@ -82,9 +97,39 @@ export default function InvitationPage() {
   };
 
   const handleDownloadPdf = () => {
-    const token = searchParams.get("t");
+    if (isEventPassed) {
+      setSnackbar({ 
+        open: true, 
+        message: "L'événement est terminé, le téléchargement n'est plus disponible", 
+        severity: "warning" 
+      });
+      return;
+    }
+
+    const token = isAdminView ? searchParams.get("t") : clientToken;
+    
     if (!token || token === "null") {
-      setSnackbar({ open: true, message: "Token manquant pour le PDF", severity: "warning" });
+      setSnackbar({ 
+        open: true, 
+        message: isAdminView 
+          ? "Token manquant pour le PDF" 
+          : "Préparation du téléchargement...", 
+        severity: "warning" 
+      });
+      
+      if (!isAdminView) {
+        const deviceId = localStorage.getItem("deviceId_for_invite");
+        if (deviceId) {
+          const newToken = generateClientToken(deviceId);
+          setClientToken(newToken);
+          localStorage.setItem(`clientToken_${inviteId}`, newToken);
+          
+          setTimeout(() => {
+            const url = `${BACKEND_BASE}/api/invites/${invite.eventId}/${invite.id}/pdf?t=${newToken}`;
+            window.open(url, "_blank");
+          }, 500);
+        }
+      }
       return;
     }
     
@@ -104,9 +149,25 @@ export default function InvitationPage() {
       >
         <CardContent sx={{ p: 4, textAlign: "center" }}>
           <CelebrationIcon sx={{ fontSize: 60, color: "gold", mb: 2 }} />
+          
+          {isEventPassed && (
+            <Box sx={{ 
+              backgroundColor: '#fff3cd', 
+              border: '1px solid #ffeaa7',
+              borderRadius: 2,
+              p: 2,
+              mb: 3
+            }}>
+              <Typography variant="body2" color="#856404" align="center">
+                ⚠️ Cet événement est terminé
+              </Typography>
+            </Box>
+          )}
+
           <Typography variant="h4" fontWeight={700}>
             {invite.event?.name || "Invitation"}
           </Typography>
+          
           <Typography variant="subtitle1" sx={{ mb: 3, color: "text.secondary" }}>
             {invite.event ? (
               <>
@@ -128,9 +189,11 @@ export default function InvitationPage() {
           <Typography variant="h5" fontWeight={600} sx={{ mb: 1 }}>
             {invite.name}
           </Typography>
+          
           <Typography variant="body2" sx={{ mb: 2 }}>
             {invite.email}
           </Typography>
+          
           <Typography variant="body2" sx={{ mb: 2 }}>
             Table : {invite.tableNumber || "Non assignée"}
           </Typography>
@@ -147,10 +210,17 @@ export default function InvitationPage() {
             <Button variant="contained" startIcon={<OpenInNewIcon />} onClick={() => window.open(qrValue, "_blank")}>
               Ouvrir
             </Button>
+            
             <Button variant="outlined" startIcon={<DownloadIcon />} onClick={handleDownloadPng}>
               PNG
             </Button>
-            <Button variant="outlined" startIcon={<DownloadIcon />} onClick={handleDownloadPdf}>
+            
+            <Button 
+              variant="outlined" 
+              startIcon={<DownloadIcon />} 
+              onClick={handleDownloadPdf}
+              disabled={isEventPassed}
+            >
               PDF
             </Button>
           </Stack>

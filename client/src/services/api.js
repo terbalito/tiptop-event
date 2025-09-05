@@ -55,17 +55,17 @@ export const logout = async () => {
   try { await api.post("/auth/logout"); } catch {}
 };
 
-
-
-
-
 // ✅ bien mettre eventId dans l’URL
 export const fetchInviteById = (eventId, inviteId) =>
   api.get(`/invites/${eventId}/invites/${inviteId}`).then(res => res.data);
 
 
+// export const registerDeviceForInvite = (eventId, inviteId, deviceId) =>
+//   api.post(`/events/${eventId}/invites/${inviteId}/register`, { deviceId });
+
 export const registerDeviceForInvite = (eventId, inviteId, deviceId) =>
-  api.post(`/events/${eventId}/invites/${inviteId}/register`, { deviceId });
+  api.post(`/invites/${eventId}/invites/${inviteId}/register`, { deviceId });
+
 
 // Exemple : récupérer un invité
 export const getInviteById = (eventId, inviteId) =>
@@ -74,6 +74,13 @@ export const getInviteById = (eventId, inviteId) =>
 // Exemple : enregistrer un device
 export const registerDevice = (eventId, inviteId, deviceId) =>
   api.post(`/events/${eventId}/invites/${inviteId}/register`, { deviceId });
+
+// Fonction pour télécharger le PDF
+export const downloadInvitationPdf = (eventId, inviteId, token) => {
+  return api.get(`/invites/${eventId}/${inviteId}/pdf?t=${token}`, {
+    responseType: 'blob' // Important pour les fichiers
+  });
+};
 
 
 export default api;

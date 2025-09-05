@@ -445,264 +445,434 @@ export const getEventsByAdmin = async (req, res) => {
 _____________________________________________________________
 =============================================================
 
-pour l'instant quand je creer l'evenement j'ai ça === import { useState } from "react";
-import { Box, Paper, TextField, Button, Typography, Stack } from "@mui/material";
-import { Add as AddIcon, Event as EventIcon } from "@mui/icons-material";
-import { createEvent } from "../../services/api";
+// client/src/pages/InvitationPage.jsx
+import React, { useEffect, useState } from "react";
+import { useParams, useSearchParams } from "react-router-dom";
+import {
+  Container,
+  Typography,
+  Box,
+  Button,
+  Stack,
+  Snackbar,
+  Alert,
+  Card,
+  CardContent,
+  Chip,
+  Fade,
+} from "@mui/material";
+import DownloadIcon from "@mui/icons-material/Download";
+import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import CelebrationIcon from "@mui/icons-material/Celebration";
+import QrCode2Icon from "@mui/icons-material/QrCode2";
+import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
+import ImageIcon from "@mui/icons-material/Image";
+import { fetchInviteById, registerDeviceForInvite } from "../services/api";
 
-export default function CreateEvent({ onEventCreated, onSnackbar }) {
-  const [form, setForm] = useState({ name: "", date: "", location: "" });
+const BACKEND_BASE = "http://localhost:4000";
 
-  const handleChange = (e) =>
-    setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
+// Image d'arrière-plan élégante (URL d'une image libre de droits)
+const BACKGROUND_IMAGE = "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?ixlib=rb-4.0.3&auto=format&fit=crop&w=2069&q=80";
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!form.name || !form.date || !form.location) {
-      onSnackbar("Tous les champs sont requis", "error");
+function generateDeviceId() {
+  try {
+    if (crypto && crypto.randomUUID) return crypto.randomUUID();
+  } catch (e) {}
+  return `dv_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+export default function InvitationPage() {
+  const { eventId, inviteId } = useParams();
+  const [searchParams] = useSearchParams();
+  const [invite, setInvite] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
+
+  const isAdminView = searchParams.get("admin") === "true";
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      try {
+        const data = await fetchInviteById(eventId, inviteId);
+        setInvite(data);
+
+        if (!isAdminView) {
+          let deviceId = localStorage.getItem("deviceId_for_invite");
+          if (!deviceId) {
+            deviceId = generateDeviceId();
+            localStorage.setItem("deviceId_for_invite", deviceId);
+          }
+          try {
+            await registerDeviceForInvite(eventId, inviteId, deviceId);
+          } catch (err) {
+            console.warn("Register device error:", err);
+          }
+        }
+      } catch (err) {
+        console.error("Erreur fetchInviteById:", err);
+        setSnackbar({ open: true, message: "Invitation introuvable", severity: "error" });
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, [inviteId, isAdminView]);
+
+  if (loading) return (
+    <Box 
+      sx={{ 
+        minHeight: '100vh', 
+        background: `linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url(${BACKGROUND_IMAGE})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}
+    >
+      <Typography variant="h6" color="white">Chargement de votre invitation...</Typography>
+    </Box>
+  );
+  
+  if (!invite) return (
+    <Box 
+      sx={{ 
+        minHeight: '100vh', 
+        background: `linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url(${BACKGROUND_IMAGE})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}
+    >
+      <Typography variant="h6" color="white">Invitation introuvable</Typography>
+    </Box>
+  );
+
+  const qrValue = invite.link || `${window.location.origin}/invitation/${invite.id}`;
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrValue)}&bgcolor=ffffff&color=2c3e50&margin=20`;
+
+  const handleDownloadPng = () => {
+    if (!invite.cardUrl) {
+      setSnackbar({ open: true, message: "Carte non générée encore", severity: "warning" });
       return;
     }
-    try {
-      await createEvent(form);
-      onSnackbar("Événement créé ✅", "success");
-      setForm({ name: "", date: "", location: "" });
-      onEventCreated(); // recharge la liste
-    } catch {
-      onSnackbar("Création impossible (auth ?)", "error");
+    const url = `${BACKEND_BASE}${invite.cardUrl}`;
+    window.open(url, "_blank");
+  };
+
+  const handleDownloadPdf = () => {
+    const token = searchParams.get("t");
+    if (!token || token === "null") {
+      setSnackbar({ open: true, message: "Token manquant pour le PDF", severity: "warning" });
+      return;
     }
+    
+    const url = `${BACKEND_BASE}/api/invites/${invite.eventId}/${invite.id}/pdf?t=${token}`;
+    window.open(url, "_blank");
   };
 
   return (
-    <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
-      <Typography variant="h6" gutterBottom sx={{ display: "flex", alignItems: "center" }}>
-        <AddIcon sx={{ mr: 1 }} /> Créer un nouvel événement
-      </Typography>
-      <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
-        <Stack spacing={2}>
-          <TextField
-            name="name"
-            label="Nom de l'événement"
-            value={form.name}
-            onChange={handleChange}
-            fullWidth
-            required
-          />
-          <TextField
-            name="date"
-            label="Date"
-            type="datetime-local"
-            value={form.date}
-            onChange={handleChange}
-            fullWidth
-            required
-            InputLabelProps={{ shrink: true }}
-          />
-          <TextField
-            name="location"
-            label="Lieu"
-            value={form.location}
-            onChange={handleChange}
-            fullWidth
-            required
-          />
-          <Button type="submit" variant="contained" size="large" startIcon={<EventIcon />}>
-            Créer l'événement
-          </Button>
-        </Stack>
-      </Box>
-    </Paper>
+    <Box 
+      sx={{ 
+        minHeight: '100vh',
+        background: `linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url(${BACKGROUND_IMAGE})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed',
+        py: 8,
+        px: 2
+      }}
+    >
+      <Container maxWidth="md">
+        <Fade in={true} timeout={1000}>
+          <Card
+            elevation={24}
+            sx={{
+              borderRadius: 4,
+              overflow: 'visible',
+              background: 'linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(248,249,250,0.95) 100%)',
+              backdropFilter: 'blur(10px)',
+              border: '1px solid rgba(255,255,255,0.2)',
+              position: 'relative',
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: -2,
+                left: -2,
+                right: -2,
+                bottom: -2,
+                background: 'linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4)',
+                borderRadius: 6,
+                zIndex: -1,
+                animation: 'gradient 3s ease infinite',
+              }
+            }}
+          >
+            {/* En-tête décorative */}
+            <Box
+              sx={{
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                py: 4,
+                textAlign: 'center',
+                borderTopLeftRadius: 16,
+                borderTopRightRadius: 16,
+                position: 'relative',
+                overflow: 'hidden'
+              }}
+            >
+              <CelebrationIcon 
+                sx={{ 
+                  fontSize: 80, 
+                  color: 'gold', 
+                  mb: 2,
+                  filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))'
+                }} 
+              />
+              <Typography 
+                variant="h3" 
+                fontWeight={800}
+                color="white"
+                sx={{
+                  textShadow: '2px 2px 4px rgba(0,0,0,0.5)',
+                  mb: 1
+                }}
+              >
+                {invite.event?.name || "INVITATION EXCLUSIVE"}
+              </Typography>
+              <Chip
+                label="Votre Place Est Réservée"
+                sx={{
+                  background: 'rgba(255,255,255,0.2)',
+                  color: 'white',
+                  fontWeight: 600,
+                  backdropFilter: 'blur(10px)'
+                }}
+              />
+            </Box>
+
+            <CardContent sx={{ p: 6, textAlign: 'center' }}>
+              {/* Informations de l'événement */}
+              {invite.event && (
+                <Box sx={{ mb: 4 }}>
+                  <Typography variant="h6" color="primary" fontWeight={600} gutterBottom>
+                    📅 Date & Lieu
+                  </Typography>
+                  <Typography variant="body1" color="text.secondary" paragraph>
+                    {new Date(invite.event.date).toLocaleDateString("fr-FR", {
+                      weekday: "long",
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </Typography>
+                  <Typography variant="body1" color="text.secondary">
+                    🏛️ {invite.event.location}
+                  </Typography>
+                </Box>
+              )}
+
+              <Box
+                sx={{
+                  width: '100%',
+                  height: 2,
+                  background: 'linear-gradient(90deg, transparent, #667eea, transparent)',
+                  my: 4
+                }}
+              />
+
+              {/* Informations de l'invité */}
+              <Box sx={{ mb: 4 }}>
+                <Typography variant="h4" fontWeight={700} color="#2c3e50" gutterBottom>
+                  {invite.name}
+                </Typography>
+                
+                <Stack spacing={1} alignItems="center" sx={{ mt: 2 }}>
+                  {invite.email && (
+                    <Chip
+                      icon={<span>📧</span>}
+                      label={invite.email}
+                      variant="outlined"
+                      sx={{ fontWeight: 500 }}
+                    />
+                  )}
+                  {invite.tableNumber && (
+                    <Chip
+                      icon={<span>🍽️</span>}
+                      label={`Table ${invite.tableNumber}`}
+                      color="primary"
+                      sx={{ fontWeight: 600 }}
+                    />
+                  )}
+                </Stack>
+              </Box>
+
+              {/* QR Code */}
+              <Box sx={{ mb: 4 }}>
+                <Typography variant="h6" color="#2c3e50" fontWeight={600} gutterBottom>
+                  <QrCode2Icon sx={{ mr: 1, verticalAlign: 'middle' }} />
+                  Votre Code d'Accès
+                </Typography>
+                <Box
+                  sx={{
+                    p: 2,
+                    background: 'white',
+                    borderRadius: 3,
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+                    display: 'inline-block',
+                    border: '2px solid #e0e0e0'
+                  }}
+                >
+                  <img 
+                    src={qrUrl} 
+                    alt="QR Code" 
+                    width={200} 
+                    height={200}
+                    style={{ 
+                      borderRadius: 12,
+                      border: '4px solid white',
+                      boxShadow: '0 4px 16px rgba(0,0,0,0.1)'
+                    }}
+                  />
+                </Box>
+              </Box>
+
+              {/* Lien */}
+              <Box sx={{ mb: 4 }}>
+                <Typography variant="body2" color="text.secondary" paragraph>
+                  🔗 Votre lien personnel
+                </Typography>
+                <Box
+                  sx={{
+                    p: 2,
+                    background: '#f8f9fa',
+                    borderRadius: 2,
+                    border: '1px dashed #dee2e6'
+                  }}
+                >
+                  <Typography 
+                    variant="caption" 
+                    sx={{ 
+                      wordBreak: 'break-all',
+                      fontFamily: 'monospace',
+                      color: '#495057'
+                    }}
+                  >
+                    {invite.link}
+                  </Typography>
+                </Box>
+              </Box>
+
+              {/* Boutons d'action */}
+              <Stack 
+                direction={{ xs: 'column', sm: 'row' }} 
+                spacing={2} 
+                justifyContent="center"
+                sx={{ mt: 4 }}
+              >
+                <Button
+                  variant="contained"
+                  size="large"
+                  startIcon={<OpenInNewIcon />}
+                  onClick={() => window.open(qrValue, "_blank")}
+                  sx={{
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    borderRadius: 3,
+                    px: 4,
+                    py: 1.5,
+                    fontWeight: 600
+                  }}
+                >
+                  Ouvrir l'Invitation
+                </Button>
+
+                <Button
+                  variant="outlined"
+                  size="large"
+                  startIcon={<ImageIcon />}
+                  onClick={handleDownloadPng}
+                  sx={{
+                    borderColor: '#4ecdc4',
+                    color: '#4ecdc4',
+                    borderRadius: 3,
+                    px: 4,
+                    py: 1.5,
+                    fontWeight: 600,
+                    '&:hover': {
+                      borderColor: '#45b7d1',
+                      background: 'rgba(78, 205, 196, 0.1)'
+                    }
+                  }}
+                >
+                  PNG
+                </Button>
+
+                <Button
+                  variant="outlined"
+                  size="large"
+                  startIcon={<PictureAsPdfIcon />}
+                  onClick={handleDownloadPdf}
+                  sx={{
+                    borderColor: '#ff6b6b',
+                    color: '#ff6b6b',
+                    borderRadius: 3,
+                    px: 4,
+                    py: 1.5,
+                    fontWeight: 600,
+                    '&:hover': {
+                      borderColor: '#ff5252',
+                      background: 'rgba(255, 107, 107, 0.1)'
+                    }
+                  }}
+                >
+                  PDF
+                </Button>
+              </Stack>
+            </CardContent>
+
+            {/* Pied de page */}
+            <Box
+              sx={{
+                background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
+                py: 3,
+                textAlign: 'center',
+                borderBottomLeftRadius: 16,
+                borderBottomRightRadius: 16
+              }}
+            >
+              <Typography variant="body2" color="text.secondary">
+                ✨ Généré avec TipTop Events • Votre présence nous honore
+              </Typography>
+            </Box>
+          </Card>
+        </Fade>
+      </Container>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert severity={snackbar.severity} sx={{ width: "100%" }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+
+      {/* Styles d'animation */}
+      <style>
+        {`
+          @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+          }
+        `}
+      </style>
+    </Box>
   );
-}  eventsController.js === import admin from '../services/firebase.js';
-
-export const createEvent = async (req, res) => {
-  const { name, date, location } = req.body;
-  const adminId = req.user.uid;
-
-  if (!name || !date || !location) {
-    return res.status(400).json({ error: "Champs manquants" });
-  }
-
-  try {
-    const db = admin.firestore();
-    const newEventRef = db.collection("events").doc();
-    await newEventRef.set({
-      name,
-      date,
-      location,
-      adminId,
-      createdAt: Date.now(),
-    });
-
-    res.status(201).json({ id: newEventRef.id, name, date, location });
-  } catch (error) {
-    res.status(500).json({ error: "Erreur lors de la création" });
-  }
-};
-
-export const getEventsByAdmin = async (req, res) => {
-  const adminId = req.user.uid;
-
-  try {
-    const db = admin.firestore();
-    const snapshot = await db.collection("events").where("adminId", "==", adminId).get();
-
-    const events = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    res.status(200).json(events);
-  } catch (error) {
-    res.status(500).json({ error: "Erreur de récupération des événements" });
-  }
-};
-event.js === // server/routes/event.js
-import express from 'express';
-import { createEvent, getEventsByAdmin } from '../controllers/eventController.js';
-import authMiddleware from '../middleware/authMiddleware.js';
-
-
-const router = express.Router();
-
-// Créer un événement
-router.post('/', authMiddleware, createEvent);
-
-// Récupérer les événements de l'admin connecté
-router.get('/', authMiddleware, getEventsByAdmin);
-
-export default router;
-   et voilà server.js === // server/server.js
-import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import morgan from 'morgan';
-import fs from 'fs';
-import path from 'path';
-import cookieParser from 'cookie-parser';
-import authRoutes from './routes/auth.js';
-import eventRoutes from './routes/event.js';
-import inviteRoutes from './routes/invites.js';
-
-dotenv.config();
-const app = express();
-const PORT = process.env.PORT || 4000;
-
-app.use(cors({
-  origin: "http://localhost:5173",
-  credentials: true,
-}));
-app.use(express.json());
-app.use(cookieParser());
-app.use(morgan('dev'));
-
-app.use('/api/auth', authRoutes);
-app.use('/api/events', eventRoutes);
-app.use('/api/invites', inviteRoutes);
-
-// 👇 CORRECTION ICI - Chemin absolu pour les fichiers générés
-const generatedDir = path.join(process.cwd(), 'server', 'generated');
-if (!fs.existsSync(generatedDir)) {
-  fs.mkdirSync(generatedDir, { recursive: true });
 }
-
-// Servir les images générées
-app.use('/generated', express.static(generatedDir));
-
-// Route pour télécharger les images
-app.get('/download/:eventId/:filename', (req, res) => {
-  const { eventId, filename } = req.params;
-  const filePath = path.join(generatedDir, eventId, filename);
-  
-  if (fs.existsSync(filePath)) {
-    res.download(filePath, `${filename}`, (err) => {
-      if (err) {
-        console.error('Erreur téléchargement:', err);
-        res.status(500).send('Erreur lors du téléchargement');
-      }
-    });
-  } else {
-    res.status(404).send('Fichier non trouvé');
-  }
-});
-
-app.get('/', (req, res) => {
-  res.send('🚀 TipTop Event Backend is alive!');
-});
-
-// Créer le dossier uploads si pas là
-const uploadsDir = path.join(process.cwd(), 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-app.listen(PORT, () => {
-  console.log(`✅ Server running on http://localhost:${PORT}`);
-}); coté services/api.js === // client/src/services/api.js
-import axios from "axios";
-
-const api = axios.create({
-  baseURL: "http://localhost:4000/api",
-  withCredentials: true,
-});
-
-api.interceptors.request.use((config) => config);
-
-api.interceptors.response.use(
-  (res) => res,
-  (err) => {
-    if (err.response?.status === 401) {
-      localStorage.removeItem("authToken");
-      localStorage.removeItem("token");
-      window.location.href = "/login";
-    }
-    return Promise.reject(err);
-  }
-);
-
-export const loginBackend = async (idToken) => {
-  const { data } = await api.post("/auth/login", { idToken });
-  return data;
-};
-
-export const createEvent = async (payload) => {
-  const { data } = await api.post("/events", payload);
-  return data;
-};
-
-export const fetchEvents = async () => {
-  const { data } = await api.get("/events");
-  return data;
-};
-
-export const fetchInvitesByEvent = async (eventId) => {
-  const { data } = await api.get(`/invites/${eventId}`);
-  return data;
-};
-
-export const fetchInvitesCount = async (eventId) => {
-  const { data } = await api.get(`/invites/${eventId}/count`);
-  return data;
-};
-
-// 👇 NEW: déclenche la génération (QR + cartes) pour l’event
-export const generateCards = async (eventId) => {
-  const { data } = await api.post(`/invites/${eventId}/generate-cards`);
-  return data;
-};
-
-export const logout = async () => {
-  try { await api.post("/auth/logout"); } catch {}
-};
-
-export default api;        services/eventsService.js    === import axios from 'axios';
-
-const API_URL = 'http://localhost:4000/api/events';
-
-export const createEvent = async (eventData, token) => {
-  return await axios.post(`${API_URL}/create`, eventData, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-};
-
-export const fetchEvents = async (token) => {
-  const res = await axios.get(API_URL, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return res.data;
-};

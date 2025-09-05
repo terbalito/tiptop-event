@@ -195,6 +195,7 @@ export const getInviteById = async (req, res) => {
 };
 
 // ✅ Enregistrer un device pour un invité
+// server/controllers/inviteController.js
 export const registerDevice = async (req, res) => {
   try {
     const { eventId, inviteId } = req.params;
@@ -211,12 +212,24 @@ export const registerDevice = async (req, res) => {
       return res.status(404).json({ message: "Invité introuvable" });
     }
 
+    const inviteData = doc.data();
+    
+    // Mettre à jour ou ajouter le deviceId
     await inviteRef.update({
       registeredDevice: deviceId,
       registeredAt: new Date().toISOString(),
+      // Garder une trace des devices pour analytics
+      devices: admin.firestore.FieldValue.arrayUnion({
+        deviceId,
+        registeredAt: new Date().toISOString(),
+        userAgent: req.headers['user-agent']
+      })
     });
 
-    res.json({ success: true });
+    res.json({ 
+      success: true,
+      message: "Appareil enregistré avec succès"
+    });
   } catch (error) {
     console.error("Erreur registerDevice:", error);
     res.status(500).json({ message: error.message });
@@ -224,13 +237,11 @@ export const registerDevice = async (req, res) => {
 };
 
 
-
 export const downloadInvitationPdf = async (req, res) => {
   try {
     const { eventId, inviteId } = req.params;
     const token = req.query.t;
 
-    // Vérif du hash en DB
     const doc = await db
       .collection("events")
       .doc(eventId)
@@ -242,17 +253,49 @@ export const downloadInvitationPdf = async (req, res) => {
 
     const invite = doc.data();
     
-    // Vérifier soit le token normal soit le token admin
-    const hash = crypto.createHash("sha256").update(token).digest("hex");
-    const isValidToken = hash === invite.tokenHash || hash === invite.adminTokenHash;
+    // Récupérer les infos de l'événement pour vérifier la date
+    const eventDoc = await db.collection("events").doc(eventId).get();
+    if (!eventDoc.exists) {
+      return res.status(404).json({ error: "Événement non trouvé" });
+    }
+    
+    const eventData = eventDoc.data();
+    const eventDate = new Date(eventData.date);
+    const isEventPassed = Date.now() > eventDate.getTime();
 
-    if (!isValidToken) {
-      return res.status(401).json({ error: "Token invalide" });
+    // Vérifier les différents types de tokens
+    const hash = crypto.createHash("sha256").update(token).digest("hex");
+    
+    // 1. Token admin (hashé) - n'expire pas
+    const isAdminToken = hash === invite.adminTokenHash;
+    
+    // 2. Token invité (vérification basée sur le deviceId)
+    let isClientToken = false;
+    if (!isEventPassed) { // Seulement si l'événement n'est pas passé
+      try {
+        // Le token client est deviceId:timestamp en base64
+        const decoded = Buffer.from(token, 'base64').toString('utf8');
+        const [deviceId, timestamp] = decoded.split(':');
+        
+        // Vérifier si le deviceId est enregistré pour cet invité
+        if (invite.registeredDevice === deviceId) {
+          isClientToken = true;
+        }
+      } catch (e) {
+        // Erreur de décodage, ce n'est pas un token client valide
+        console.log('Token client invalide:', e.message);
+      }
     }
 
-    // Récupérer les infos de l'événement
-    const eventDoc = await db.collection("events").doc(eventId).get();
-    const eventData = eventDoc.exists ? eventDoc.data() : {};
+    // 3. Token normal (pour les liens partagés) - n'expire pas
+    const isNormalToken = hash === invite.tokenHash;
+
+    if (!isAdminToken && !isClientToken && !isNormalToken) {
+      if (isEventPassed) {
+        return res.status(410).json({ error: "L'événement est terminé, le téléchargement n'est plus disponible" });
+      }
+      return res.status(401).json({ error: "Token invalide" });
+    }
 
     // Préparer les données pour le PDF
     const pdfData = {
