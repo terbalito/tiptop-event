@@ -1,4 +1,3 @@
-// client/src/services/api.js
 import axios from "axios";
 
 const api = axios.create({
@@ -6,8 +5,7 @@ const api = axios.create({
   withCredentials: true,
 });
 
-api.interceptors.request.use((config) => config);
-
+// 🔒 Interceptor pour gérer les 401
 api.interceptors.response.use(
   (res) => res,
   (err) => {
@@ -20,11 +18,17 @@ api.interceptors.response.use(
   }
 );
 
+// ========== AUTH ==========
 export const loginBackend = async (idToken) => {
   const { data } = await api.post("/auth/login", { idToken });
   return data;
 };
 
+export const logout = async () => {
+  try { await api.post("/auth/logout"); } catch {}
+};
+
+// ========== EVENTS ==========
 export const createEvent = async (payload) => {
   const { data } = await api.post("/events", payload);
   return data;
@@ -35,6 +39,7 @@ export const fetchEvents = async () => {
   return data;
 };
 
+// ========== INVITES ==========
 export const fetchInvitesByEvent = async (eventId) => {
   const { data } = await api.get(`/invites/${eventId}`);
   return data;
@@ -45,58 +50,52 @@ export const fetchInvitesCount = async (eventId) => {
   return data;
 };
 
-// 👇 NEW: déclenche la génération (QR + cartes) pour l’event
+export const fetchInviteById = (eventId, inviteId) =>
+  api.get(`/invites/${eventId}/invites/${inviteId}`).then(res => res.data);
+
 export const generateCards = async (eventId) => {
   const { data } = await api.post(`/invites/${eventId}/generate-cards`);
   return data;
 };
 
-export const logout = async () => {
-  try { await api.post("/auth/logout"); } catch {}
-};
-
-// ✅ bien mettre eventId dans l’URL
-export const fetchInviteById = (eventId, inviteId) =>
-  api.get(`/invites/${eventId}/invites/${inviteId}`).then(res => res.data);
-
-
-// export const registerDeviceForInvite = (eventId, inviteId, deviceId) =>
-//   api.post(`/events/${eventId}/invites/${inviteId}/register`, { deviceId });
-
 export const registerDeviceForInvite = (eventId, inviteId, deviceId) =>
   api.post(`/invites/${eventId}/invites/${inviteId}/register`, { deviceId });
 
+export const downloadInvitationPdf = (eventId, inviteId, token) =>
+  api.get(`/invites/${eventId}/${inviteId}/pdf?t=${token}`, { responseType: 'blob' });
 
-// Exemple : récupérer un invité
-export const getInviteById = (eventId, inviteId) =>
-  api.get(`/events/${eventId}/invites/${inviteId}`);
-
-// Exemple : enregistrer un device
-export const registerDevice = (eventId, inviteId, deviceId) =>
-  api.post(`/events/${eventId}/invites/${inviteId}/register`, { deviceId });
-
-// Fonction pour télécharger le PDF
-export const downloadInvitationPdf = (eventId, inviteId, token) => {
-  return api.get(`/invites/${eventId}/${inviteId}/pdf?t=${token}`, {
-    responseType: 'blob' // Important pour les fichiers
-  });
-};
-
+// ========== SCANS ==========
 export const scanInvite = async (eventId, inviteId) => {
-  const res = await axios.post(`${API_URL}/scan/${eventId}/${inviteId}`, {}, { withCredentials: true });
-  return res.data;
+  const { data } = await api.post(`/scan/${eventId}/${inviteId}`);
+  return data;
 };
 
-// Contrôleurs
+// ========== CONTROLLERS ==========
 export const fetchControllers = async () => {
-  const res = await api.get("/controllers");
-  return res.data;
+  const { data } = await api.get("/controllers");
+  return data;
 };
 
-export const createController = async () => {
-  const res = await api.post("/controllers");
-  return res.data;
+export const createController = async (payload) => {
+  const { data } = await api.post("/controllers", payload);
+  return data;
 };
+
+export const loginController = async ({ username, password }) => {
+  const { data } = await api.post("/controllers/login", { username, password });
+  return data;
+};
+
+export const updateController = async (id, payload) => {
+  const { data } = await api.put(`/controllers/${id}`, payload);
+  return data;
+};
+
+export const deleteController = async (id) => {
+  const { data } = await api.delete(`/controllers/${id}`);
+  return data;
+};
+
 
 
 export default api;

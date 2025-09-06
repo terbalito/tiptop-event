@@ -6,6 +6,8 @@ import GuestsPage from './pages/Admin/GuestsPage';
 import Layout from './components/Layout';
 import InvitationPages from './pages/InvitationPages';
 import ControllersPage from "./pages/Admin/ControllersPage";
+import ControllerLogin from './pages/Auth/ControllerLogin';
+import { Scanner } from '@mui/icons-material';
 
 // Composant de route privée
 const PrivateRoute = () => {
@@ -21,8 +23,9 @@ function App() {
       <Routes>
         {/* Public */}
         <Route path="/login" element={<Login />} />
+        <Route path="/controller-login" element={<ControllerLogin />} />  {/* Contrôleur */}
         <Route path="/invite/:eventId/:inviteId" element={<InvitationPages />} />
-
+        <Route path="/scanner" element={<Scanner />} />  {/* <-- ici */}
 
 
         {/* Privées */}
@@ -31,6 +34,7 @@ function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/guests" element={<GuestsPage />} />
             <Route path="/controllers" element={<ControllersPage />} />
+
 
           </Route>
         </Route>

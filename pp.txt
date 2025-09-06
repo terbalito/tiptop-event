@@ -1,0 +1,117 @@
+je veux que tu refassse toute cette page de sorte qu'en cliquant sue creer un controlleur qu'il puisse avoir une modal avec un formiumaire à entre les identifiant s avec option de generer automatiquement en dessous import { useEffect, useState } from "react";
+import {
+  Container,
+  Typography,
+  Button,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
+  Snackbar,
+  Alert
+} from "@mui/material";
+import { fetchControllers, createController, fetchEvents } from "../../services/api";
+
+
+export default function ControllersPage() {
+  const [controllers, setControllers] = useState([]);
+  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
+  const [events, setEvents] = useState([]);
+  const [selectedEvent, setSelectedEvent] = useState("");
+
+  useEffect(() => {
+  fetchEvents().then(setEvents);
+}, []);
+
+  const loadControllers = async () => {
+    try {
+      const data = await fetchControllers();
+      setControllers(data);
+    } catch {
+      setSnackbar({ open: true, message: "Erreur chargement contrôleurs", severity: "error" });
+    }
+  };
+
+const handleCreate = async () => {
+  if (!selectedEvent) {
+    return setSnackbar({ open: true, message: "Choisissez un événement", severity: "warning" });
+  }
+  const username = `ctrl_${Date.now().toString().slice(-4)}`;
+  const password = Math.random().toString(36).slice(-8);
+
+  await createController({ username, password, eventId: selectedEvent });
+  setSnackbar({ open: true, message: `Contrôleur ${username} créé !`, severity: "success" });
+  loadControllers();
+};
+
+  useEffect(() => {
+    loadControllers();
+  }, []);
+
+  return (
+    <Container maxWidth="md" sx={{ py: 4 }}>
+      <Typography variant="h4" gutterBottom>
+        Gestion des Contrôleurs
+      </Typography>
+
+      <Button variant="contained" color="primary" onClick={handleCreate} sx={{ mb: 3 }}>
+        ➕ Créer un contrôleur
+      </Button>
+
+      <Table>
+        <TableHead>
+          <TableRow>
+            <TableCell>Identifiant</TableCell>
+            <TableCell>Password</TableCell>
+            <TableCell>Créé le</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {controllers.map((c, i) => (
+            <TableRow key={i}>
+              <TableCell>{c.username}</TableCell>
+              <TableCell>{c.password}</TableCell>
+              <TableCell>{new Date(c.createdAt).toLocaleString()}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert severity={snackbar.severity}>{snackbar.message}</Alert>
+      </Snackbar>
+    </Container>
+  );
+}    regler aussi ce probleme === [nodemon] restarting due to changes...
+[nodemon] starting `node server.js`
+file:///E:/PORTFOLIO/PERSO/tiptop/server/controllers/controllerController.js:1
+import { db } from "../services/firebase.js"; // ton init Firebase
+         ^^
+SyntaxError: The requested module '../services/firebase.js' does not provide an export named 'db'
+    at ModuleJob._instantiate (node:internal/modules/esm/module_job:180:21)
+    at async ModuleJob.run (node:internal/modules/esm/module_job:263:5)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:547:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:116:5)
+
+Node.js v22.13.0
+[nodemon] app crashed - waiting for file changes before starting... 
+
+dans serve/services.firebase.js === import admin from 'firebase-admin';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+const serviceAccount = require('../config/serviceAccountKey.json'); // à générer via Firebase Console
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
+
+const db = admin.firestore(); 
+
+export default admin;

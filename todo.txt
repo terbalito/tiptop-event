@@ -219,7 +219,14 @@ Affichage en temps réel du résultat
 
 -----
 
-ctrl_8651          wts3ide8
+où ranger ce code ===     const user = await login(trimmedEmail, trimmedPassword);
+      if (user.role === "admin") {
+        navigate("/dashboard");
+      } else if (user.role === "controller") {
+        navigate("/scanner");
+    } et oùva ce code == app.use("/api/admin", authMiddleware("admin"), adminRoutes);
+app.use("/api/scanner", authMiddleware("controller"), scannerRoutes);
+  oui je le veux que tu écrive le flux complet côté front pour l’admin : bouton "Créer un contrôleur" → appel backend → affichage des identifiants générés (mail + mdp) pour les donner au contrôleur mais ça sera des compte mail factice ou il va falloir recuperer les vrais adresse mails des controlleurs 
 
 ### Arborescence du dossier `client`
 

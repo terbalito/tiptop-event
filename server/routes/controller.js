@@ -1,9 +1,13 @@
 import express from "express";
-import { createController, getControllers } from "../controllers/controllerController.js";
+import { createController, loginController, getControllers, updateController, deleteController } from "../controllers/controllerController.js";
 
 const router = express.Router();
 
-router.get("/", getControllers);
 router.post("/", createController);
+router.post("/login", loginController);
+router.get("/", getControllers);
+router.put("/:id", updateController);
+router.delete("/:id", deleteController);
+
 
 export default router;

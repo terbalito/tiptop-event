@@ -1,36 +1,69 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { QrReader } from "react-qr-reader";
-import { useParams } from "react-router-dom";
-import { scanInvite } from "../../services/api";
+import { io } from "socket.io-client";
+import axios from "axios";
+import { Container, Typography, Alert } from "@mui/material";
+
+const socket = io("http://localhost:4000"); // backend
 
 export default function Scanner() {
-  const { eventId } = useParams();
   const [result, setResult] = useState("");
+  const [status, setStatus] = useState("");
 
-  const handleScan = async (data) => {
-    if (data) {
-      setResult(data.text || data);
+  useEffect(() => {
+    socket.on("scanResult", (data) => {
+      console.log("Résultat socket:", data);
+      setStatus(data.status);
+    });
+
+    return () => socket.off("scanResult");
+  }, []);
+
+  const handleScan = async (value) => {
+    if (value) {
+      setResult(value);
+
       try {
-        const inviteId = new URL(data).pathname.split("/").pop();
-        const res = await scanInvite(eventId, inviteId);
-        alert(res.message);
+        const parts = value.split("/");
+        const eventId = parts[parts.length - 2];
+        const inviteId = parts[parts.length - 1];
+
+        await axios.post("http://localhost:4000/api/scan", {
+          eventId,
+          inviteId,
+        }, { withCredentials: true });
+
       } catch (err) {
-        alert("Erreur scan");
+        console.error("Erreur scan:", err);
       }
     }
   };
 
   return (
-    <div>
-      <h2>Scanner l’invitation</h2>
+    <Container sx={{ py: 6 }}>
+      <Typography variant="h4" gutterBottom>Scanner une invitation</Typography>
+
       <QrReader
-        onResult={(result, error) => {
-          if (!!result) handleScan(result);
-          if (!!error) console.warn(error);
+        constraints={{ facingMode: "environment" }}
+        onResult={(res, err) => {
+          if (!!res) handleScan(res?.text);
+          if (!!err) console.warn(err);
         }}
         style={{ width: "100%" }}
       />
-      <p>Résultat: {result}</p>
-    </div>
+
+      <Typography sx={{ mt: 2 }}>Résultat brut : {result}</Typography>
+
+      {status && (
+        <Alert severity={
+          status === "scanSuccess" ? "success" :
+          status === "alreadyScanned" ? "warning" : "error"
+        } sx={{ mt: 2 }}>
+          {status === "scanSuccess" && "✔️ Scan validé"}
+          {status === "alreadyScanned" && "⚠️ Déjà scanné"}
+          {status === "invalidCode" && "❌ Code invalide"}
+        </Alert>
+      )}
+    </Container>
   );
 }
