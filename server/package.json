@@ -5,8 +5,8 @@
   "main": "server.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon server.js"
+      "test": "echo \"Error: no test specified\" && exit 1",
+      "dev": "nodemon -r dotenv/config server.js"
   },
   "keywords": [],
   "author": "",
