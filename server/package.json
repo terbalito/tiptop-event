@@ -13,7 +13,7 @@
   "license": "ISC",
   "packageManager": "pnpm@10.12.4",
   "dependencies": {
-    "canvas": "npm:canvas-prebuilt@2.0.0-alpha.14",
+    "bcryptjs": "^3.0.2",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
@@ -29,6 +29,7 @@
     "puppeteer": "^24.17.1",
     "pureimage": "^0.4.18",
     "qrcode": "^1.5.4",
+    "skia-canvas": "^3.0.6",
     "socket.io": "^4.8.1",
     "uuid": "^11.1.0",
     "xlsx": "^0.18.5"
