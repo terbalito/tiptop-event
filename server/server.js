@@ -19,9 +19,11 @@ const PORT = process.env.PORT || 4000;
 const server = http.createServer(app);
 const io = initSocket(server);
 
-// CORS
 app.use(cors({
-  origin: process.env.FRONTEND_URL || "http://localhost:5173",
+  origin: [
+    "http://localhost:5173",           // dev local
+    "https://terbalito.github.io/tiptop-event"  // prod frontend
+  ],
   credentials: true,
 }));
 
