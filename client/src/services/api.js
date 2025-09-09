@@ -1,11 +1,14 @@
 import axios from "axios";
 
+// Base URL dynamique selon l'environnement
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:4000/api";
+
 const api = axios.create({
-  baseURL: "http://localhost:4000/api",
+  baseURL: BASE_URL,
   withCredentials: true,
 });
 
-// 🔒 Interceptor pour gérer les 401
+// 🔒 Interceptor pour gérer les 401 (token expiré / non autorisé)
 api.interceptors.response.use(
   (res) => res,
   (err) => {
@@ -18,14 +21,19 @@ api.interceptors.response.use(
   }
 );
 
+
 // ========== AUTH ==========
+// Login via Firebase ID token
 export const loginBackend = async (idToken) => {
   const { data } = await api.post("/auth/login", { idToken });
   return data;
 };
 
+// Logout
 export const logout = async () => {
-  try { await api.post("/auth/logout"); } catch {}
+  try {
+    await api.post("/auth/logout");
+  } catch {}
 };
 
 // ========== EVENTS ==========
@@ -50,18 +58,20 @@ export const fetchInvitesCount = async (eventId) => {
   return data;
 };
 
-export const fetchInviteById = (eventId, inviteId) =>
-  api.get(`/invites/${eventId}/invites/${inviteId}`).then(res => res.data);
+export const fetchInviteById = async (eventId, inviteId) => {
+  const { data } = await api.get(`/invites/${eventId}/invites/${inviteId}`);
+  return data;
+};
 
 export const generateCards = async (eventId) => {
   const { data } = await api.post(`/invites/${eventId}/generate-cards`);
   return data;
 };
 
-export const registerDeviceForInvite = (eventId, inviteId, deviceId) =>
+export const registerDeviceForInvite = async (eventId, inviteId, deviceId) =>
   api.post(`/invites/${eventId}/invites/${inviteId}/register`, { deviceId });
 
-export const downloadInvitationPdf = (eventId, inviteId, token) =>
+export const downloadInvitationPdf = async (eventId, inviteId, token) =>
   api.get(`/invites/${eventId}/${inviteId}/pdf?t=${token}`, { responseType: 'blob' });
 
 // ========== SCANS ==========
@@ -95,7 +105,5 @@ export const deleteController = async (id) => {
   const { data } = await api.delete(`/controllers/${id}`);
   return data;
 };
-
-
 
 export default api;

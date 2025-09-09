@@ -1,17 +1,14 @@
 import { db } from "../services/firebase.js";
-
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
-// Création contrôleur
+// Création d'un contrôleur
 export const createController = async (req, res) => {
   try {
     const { username, password, eventId } = req.body;
 
-    // Hash du mot de passe
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Ajout Firestore (Admin SDK → db.collection().doc().set())
     const docRef = await db.collection("controllers").add({
       username,
       password: hashedPassword,
@@ -46,11 +43,7 @@ export const loginController = async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    const snap = await db
-      .collection("controllers")
-      .where("username", "==", username)
-      .get();
-
+    const snap = await db.collection("controllers").where("username", "==", username).get();
     if (snap.empty) return res.status(400).json({ error: "Utilisateur introuvable" });
 
     const ctrl = snap.docs[0].data();
@@ -61,7 +54,7 @@ export const loginController = async (req, res) => {
 
     const token = jwt.sign(
       { id, username: ctrl.username, eventId: ctrl.eventId, role: "controller" },
-      process.env.JWT_SECRET || "secret",
+      process.env.JWT_SECRET || "secret_dev", // 🔑 mettre JWT_SECRET en variable env
       { expiresIn: "8h" }
     );
 
@@ -72,18 +65,16 @@ export const loginController = async (req, res) => {
   }
 };
 
+// Update contrôleur
 export const updateController = async (req, res) => {
   try {
     const { id } = req.params;
     const { username, password, eventId } = req.body;
 
     const dataToUpdate = { username, eventId };
-    if (password) {
-      dataToUpdate.password = await bcrypt.hash(password, 10);
-    }
+    if (password) dataToUpdate.password = await bcrypt.hash(password, 10);
 
     await db.collection("controllers").doc(id).update(dataToUpdate);
-
     res.json({ message: "Contrôleur mis à jour" });
   } catch (err) {
     console.error("Erreur update controller:", err);
