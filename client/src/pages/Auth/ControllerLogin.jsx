@@ -12,7 +12,7 @@ export default function ControllerLogin() {
       const { token, eventId } = await loginController({ username, password });
       localStorage.setItem("controllerToken", token);
       localStorage.setItem("eventId", eventId);
-      window.location.href = "/scanner"; // page scan
+      window.location.href = "/controller-dashboard"; // page scan
     } catch (err) {
       setSnackbar({ open: true, message: "Identifiants invalides", severity: "error" });
     }

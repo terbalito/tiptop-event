@@ -9,6 +9,7 @@
 # Ignorer les fichiers de configuration
 /.env
 /config.txt
+/config
 
 
 # .gitignore
