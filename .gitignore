@@ -1,0 +1,16 @@
+# Ignorer les fichiers de logs
+*.log
+
+# Ignorer les dépendances
+/node_modules
+/server/node_modules
+/client/node_modules
+
+# Ignorer les fichiers de configuration
+/.env
+/config.txt
+/config
+
+
+# .gitignore
+server/config/serviceAccountKey.json
