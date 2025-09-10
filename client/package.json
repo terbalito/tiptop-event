@@ -5,6 +5,7 @@
   "type": "module",
   "homepage": "https://terbalito.github.io/tiptop-event/",
   "scripts": {
+    "dev": "vite",
     "build": "vite build",
     "deploy": "rm -rf docs && cp -r dist docs && git add docs && git commit -m 'Deploy' && git push",
     "lint": "eslint .",
