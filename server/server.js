@@ -32,15 +32,23 @@ const PORT = process.env.PORT || 4000;
 const server = http.createServer(app);
 const io = initSocket(server);
 
-app.use(
-  cors({
-    origin: [
-      "http://localhost:5173", // dev local
-      "https://tiptop-event-1.onrender.com", // ton frontend sur Render
-    ],
-    credentials: true,
-  })
-);
+// Liste des domaines autorisés
+const allowedOrigins = [
+  "http://localhost:5173", // pour ton dev local
+  "https://tiptop-event-1.onrender.com" // ton frontend Render
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true, // pour que les cookies/token passent
+}));
+
 
 app.use(express.json());
 app.use(cookieParser());
