@@ -144,8 +144,8 @@ export default function GuestsPage() {
 const viewInvitationPage = (invite) => {
   if (!invite.id || !selectedEvent) return;
 
-  // ⚡ Inclure eventId dans l’URL
-  const frontendUrl = `${window.location.origin}/invite/${selectedEvent}/${invite.id}?admin=true`;
+  // ✅ Correction pour HashRouter
+  const frontendUrl = `${window.location.origin}${window.location.pathname}#/invite/${selectedEvent}/${invite.id}?admin=true`;
   window.open(frontendUrl, "_blank");
 };
 
