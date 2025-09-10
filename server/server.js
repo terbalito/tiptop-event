@@ -36,7 +36,7 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173", // dev local
-      "https://terbalito.github.io/tiptop-event", // prod frontend
+      "https://tiptop-event-1.onrender.com", // ton frontend sur Render
     ],
     credentials: true,
   })
