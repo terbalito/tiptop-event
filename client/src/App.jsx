@@ -1,5 +1,7 @@
 import { Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+
+// PAGES
 import Dashboard from "./pages/Admin/Dashboard";
 import Login from "./pages/Login";
 import GuestsPage from "./pages/Admin/GuestsPage";
@@ -14,6 +16,7 @@ import ErrorPage from "./pages/ErrorPage";
 // Composant de route privée
 const PrivateRoute = () => {
   const { user, loading } = useAuth();
+
   if (loading) return <div>Chargement...</div>;
   return user ? <Outlet /> : <Navigate to="/login" replace />;
 };
@@ -22,15 +25,15 @@ function App() {
   return (
     <AuthProvider>
       <Routes>
-        {/* PUBLIC INVITÉS */}
+        {/* ROUTES PUBLIQUES - INVITÉS */}
         <Route path="/invite/:eventId/:inviteId" element={<InvitationPage />} />
 
-        {/* PUBLIC CONTROLLER */}
+        {/* ROUTES PUBLIQUES - CONTROLLER */}
         <Route path="/controller-login" element={<ControllerLogin />} />
         <Route path="/controller-dashboard" element={<ControllerDashboard />} />
         <Route path="/scanner-result" element={<ScanResult />} />
 
-        {/* PRIVATE ADMIN */}
+        {/* ROUTES ADMIN (PRIVÉES) */}
         <Route element={<PrivateRoute />}>
           <Route element={<Layout />}>
             <Route path="/dashboard" element={<Dashboard />} />
@@ -42,7 +45,10 @@ function App() {
         {/* LOGIN */}
         <Route path="/login" element={<Login />} />
 
-        {/* ERREUR POUR TOUT LE RESTE */}
+        {/* REDIRECTION PAR DÉFAUT */}
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
+        {/* 404 */}
         <Route path="*" element={<ErrorPage />} />
       </Routes>
     </AuthProvider>
