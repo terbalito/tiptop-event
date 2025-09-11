@@ -107,7 +107,7 @@ const downloadPdf = (inviteId) => {
     return;
   }
 
-  const url = `${import.meta.env.VITE_API_BASE_URL}/api/invites/${selectedEvent}/${inviteId}/pdf?t=${token}`;
+  const url = `${import.meta.env.VITE_API_URL}/api/invites/${selectedEvent}/${inviteId}/pdf?t=${token}`;
   window.open(url, "_blank");
 };
 
@@ -127,8 +127,8 @@ const downloadImage = (cardUrl, name) => {
   if (!cardUrl) return;
 
   // URL absolue en prod
-  const absoluteUrl = `${import.meta.env.VITE_API_BASE_URL}${cardUrl}`;
-  const downloadUrl = `${import.meta.env.VITE_API_BASE_URL}/download/${cardUrl.split('/').slice(2).join('/')}`;
+  const absoluteUrl = `${import.meta.env.VITE_API_URL}${cardUrl}`;
+  const downloadUrl = `${import.meta.env.VITE_API_URL}/download/${cardUrl.split('/').slice(2).join('/')}`;
 
   // Ouvrir l'image
   window.open(absoluteUrl, '_blank');

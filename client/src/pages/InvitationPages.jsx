@@ -17,7 +17,7 @@ import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import CelebrationIcon from "@mui/icons-material/Celebration";
 import { fetchInviteById, registerDeviceForInvite } from "../services/api";
 
-const BACKEND_BASE = "http://localhost:4000";
+const BACKEND_BASE = import.meta.env.VITE_API_URL;
 
 function generateDeviceId() {
   try {
