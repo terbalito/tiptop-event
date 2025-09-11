@@ -46,7 +46,7 @@ app.use(cors({
       callback(new Error("Not allowed by CORS"));
     }
   },
-  credentials: true, // pour que les cookies/token passent
+  credentials: true,
 }));
 
 

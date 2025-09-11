@@ -10,8 +10,8 @@ export const login = async (req, res) => {
     res.cookie("session", sessionCookie, {
       maxAge: expiresIn,
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production", // true en prod
-      sameSite: "strict",
+      secure: process.env.NODE_ENV === "production", 
+      sameSite: "None", 
     });
     res.status(200).json({ message: "Session créée" });
   } catch (error) {
