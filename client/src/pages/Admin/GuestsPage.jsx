@@ -144,10 +144,11 @@ export default function GuestsPage() {
 const viewInvitationPage = (invite) => {
   if (!invite.id || !selectedEvent) return;
 
-  // ✅ Correction pour HashRouter
-  const frontendUrl = `${window.location.origin}${window.location.pathname}#/invite/${selectedEvent}/${invite.id}?admin=true`;
+  // ✅ Corrigé pour BrowserRouter
+  const frontendUrl = `${window.location.origin}/invite/${selectedEvent}/${invite.id}?admin=true&t=${adminTokens[invite.id]}`;
   window.open(frontendUrl, "_blank");
 };
+
 
 
 
