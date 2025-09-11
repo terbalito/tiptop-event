@@ -100,16 +100,17 @@ export default function GuestsPage() {
   
 
 
-  const downloadPdf = (inviteId) => {
-    const token = adminTokens[inviteId];
-    if (!token) {
-      setSnackbar({ open: true, message: "Générez d'abord les invitations pour avoir le PDF", severity: "warning" });
-      return;
-    }
-    
-    const url = `http://localhost:4000/api/invites/${selectedEvent}/${inviteId}/pdf?t=${token}`;
-    window.open(url, "_blank");
-  };
+const downloadPdf = (inviteId) => {
+  const token = adminTokens[inviteId];
+  if (!token) {
+    setSnackbar({ open: true, message: "Générez d'abord les invitations pour avoir le PDF", severity: "warning" });
+    return;
+  }
+
+  const url = `${import.meta.env.VITE_API_BASE_URL}/api/invites/${selectedEvent}/${inviteId}/pdf?t=${token}`;
+  window.open(url, "_blank");
+};
+
 
 
 
@@ -122,24 +123,25 @@ export default function GuestsPage() {
     }
   };
 
-  const downloadImage = (cardUrl, name) => {
-    if (!cardUrl) return;
-    
-    // Convertir l'URL relative en URL absolue
-    const absoluteUrl = `http://localhost:4000${cardUrl}`;
-    const downloadUrl = `http://localhost:4000/download/${cardUrl.split('/').slice(2).join('/')}`;
-    
-    // Ouvrir dans un nouvel onglet pour visualisation
-    window.open(absoluteUrl, '_blank');
-    
-    // Téléchargement automatique
-    const link = document.createElement('a');
-    link.href = downloadUrl;
-    link.download = `${name}_invitation.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+const downloadImage = (cardUrl, name) => {
+  if (!cardUrl) return;
+
+  // URL absolue en prod
+  const absoluteUrl = `${import.meta.env.VITE_API_BASE_URL}${cardUrl}`;
+  const downloadUrl = `${import.meta.env.VITE_API_BASE_URL}/download/${cardUrl.split('/').slice(2).join('/')}`;
+
+  // Ouvrir l'image
+  window.open(absoluteUrl, '_blank');
+
+  // Téléchargement auto
+  const link = document.createElement('a');
+  link.href = downloadUrl;
+  link.download = `${name}_invitation.png`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
 
 const viewInvitationPage = (invite) => {
   if (!invite.id || !selectedEvent) return;
