@@ -7,12 +7,17 @@ import { generateInvitationCard } from "../services/imageGenerator.js";
 import { generateInviteQR } from "../services/qrCodeService.js";
 import { generateInvitationPdf } from "../services/pdfGenerator.js";
 
-
 const db = admin.firestore();
 
 // Fonction pour générer un token admin
 const generateAdminToken = () => {
   return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+};
+
+// Helper pour obtenir l'URL frontend à utiliser
+const getFrontendBase = () => {
+  const front = process.env.FRONTEND_URL || "http://localhost:5173";
+  return front.replace(/\/$/, ""); // retire slash final
 };
 
 /** Upload Excel -> écrit les invités (inchangé sauf commentaires) */
@@ -44,6 +49,7 @@ export const uploadInvites = async (req, res) => {
         devices: [],           // tableau d'appareils (multi)
         link: null,            // rempli à la génération
         tokenHash: null,       // rempli à la génération (jamais le token en clair)
+        adminTokenHash: null,  // hash du token admin
         cardUrl: null,         // URL publique de la carte PNG
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
       });
@@ -99,8 +105,6 @@ export const getInvitesCount = async (req, res) => {
   }
 };
 
-
-
 /** Génère lien + QR + carte PNG pour tous les invités d'un event */
 export const generateInvitations = async (req, res) => {
   try {
@@ -117,21 +121,40 @@ export const generateInvitations = async (req, res) => {
     }
 
     const results = [];
+    const frontendBase = getFrontendBase();
+    console.log("Using FRONTEND URL:", frontendBase);
 
     for (const d of snapshot.docs) {
       const guest = { id: d.id, ...d.data() };
 
-      // 1) QR + lien unique
+      // 1) QR + lien unique (generateInviteQR doit renvoyer un 'link' avec param token)
       const { qrDataUrl, tokenHash, link } = await generateInviteQR(eventId, guest.id);
 
-      // 2) Générer un token admin
+      // Extraire le token depuis le lien retourné par generateInviteQR
+      let tokenParam = null;
+      try {
+        if (link) {
+          // link peut être absolu (http...) ou seulement query; on utilise URL pour parser
+          const urlObj = new URL(link, "http://example.com"); // base dummy si relatif
+          tokenParam = urlObj.searchParams.get("t");
+        }
+      } catch (e) {
+        console.warn("Impossible de parser le link renvoyé par generateInviteQR:", e.message);
+      }
+
+      // 2) Générer un token admin (plaintext) et son hash
       const adminToken = generateAdminToken();
       const adminTokenHash = crypto.createHash("sha256").update(adminToken).digest("hex");
 
-      // 3) Générer la carte PNG
-      const cardUrl = await generateInvitationCard(eventId, guest, qrDataUrl, link);
+      // 3) Construire le lien final en utilisant FRONTEND_URL (évite localhost en prod)
+      const finalLink = tokenParam
+        ? `${frontendBase}/invite/${eventId}/${guest.id}?t=${tokenParam}`
+        : `${frontendBase}/invite/${eventId}/${guest.id}`;
 
-      // 4) Sauvegarder en base avec les deux tokens
+      // 4) Générer la carte PNG (on passe finalLink pour s'assurer qu'il référence le frontend correct)
+      const cardUrl = await generateInvitationCard(eventId, guest, qrDataUrl, finalLink);
+
+      // 5) Sauvegarder en base avec les deux tokens (hashes)
       await db
         .collection("events")
         .doc(eventId)
@@ -139,8 +162,8 @@ export const generateInvitations = async (req, res) => {
         .doc(guest.id)
         .update({
           tokenHash,
-          adminTokenHash, // Stocker le hash du token admin
-          link,
+          adminTokenHash,
+          link: finalLink,
           cardUrl,
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         });
@@ -148,9 +171,9 @@ export const generateInvitations = async (req, res) => {
       results.push({
         id: guest.id,
         name: guest.name,
-        link,
+        link: finalLink,
         cardUrl,
-        adminToken, // Renvoyer le token en clair pour l'admin
+        adminToken, // renvoyé en clair pour l'admin (uniquement dans la réponse)
       });
     }
 
@@ -165,7 +188,7 @@ export const generateInvitations = async (req, res) => {
 };
 
 /* ---------------------------
-   NOUVEAUX ENDPOINTS PUBLICS
+   ENDPOINTS PUBLICS
    --------------------------- */
 
 export const getInviteById = async (req, res) => {
@@ -194,8 +217,7 @@ export const getInviteById = async (req, res) => {
   }
 };
 
-// ✅ Enregistrer un device pour un invité
-// server/controllers/inviteController.js
+// Enregistrer un device pour un invité
 export const registerDevice = async (req, res) => {
   try {
     const { eventId, inviteId } = req.params;
@@ -212,23 +234,20 @@ export const registerDevice = async (req, res) => {
       return res.status(404).json({ message: "Invité introuvable" });
     }
 
-    const inviteData = doc.data();
-    
     // Mettre à jour ou ajouter le deviceId
     await inviteRef.update({
       registeredDevice: deviceId,
       registeredAt: new Date().toISOString(),
-      // Garder une trace des devices pour analytics
       devices: admin.firestore.FieldValue.arrayUnion({
         deviceId,
         registeredAt: new Date().toISOString(),
-        userAgent: req.headers['user-agent']
-      })
+        userAgent: req.headers["user-agent"] || null,
+      }),
     });
 
-    res.json({ 
+    res.json({
       success: true,
-      message: "Appareil enregistré avec succès"
+      message: "Appareil enregistré avec succès",
     });
   } catch (error) {
     console.error("Erreur registerDevice:", error);
@@ -236,59 +255,51 @@ export const registerDevice = async (req, res) => {
   }
 };
 
-
 export const downloadInvitationPdf = async (req, res) => {
   try {
     const { eventId, inviteId } = req.params;
     const token = req.query.t;
 
-    const doc = await db
+    const docRef = db
       .collection("events")
       .doc(eventId)
       .collection("invites")
-      .doc(inviteId)
-      .get();
+      .doc(inviteId);
 
+    const doc = await docRef.get();
     if (!doc.exists) return res.status(404).json({ error: "Invite not found" });
 
     const invite = doc.data();
-    
-    // Récupérer les infos de l'événement pour vérifier la date
+
+    // Récupérer les infos de l'événement
     const eventDoc = await db.collection("events").doc(eventId).get();
     if (!eventDoc.exists) {
       return res.status(404).json({ error: "Événement non trouvé" });
     }
-    
+
     const eventData = eventDoc.data();
     const eventDate = new Date(eventData.date);
     const isEventPassed = Date.now() > eventDate.getTime();
 
-    // Vérifier les différents types de tokens
-    const hash = crypto.createHash("sha256").update(token).digest("hex");
-    
-    // 1. Token admin (hashé) - n'expire pas
-    const isAdminToken = hash === invite.adminTokenHash;
-    
-    // 2. Token invité (vérification basée sur le deviceId)
+    // Vérifier tokens
+    const hash = token ? crypto.createHash("sha256").update(token).digest("hex") : null;
+
+    const isAdminToken = hash && invite.adminTokenHash && hash === invite.adminTokenHash;
+
     let isClientToken = false;
-    if (!isEventPassed) { // Seulement si l'événement n'est pas passé
+    if (!isEventPassed && token) {
       try {
-        // Le token client est deviceId:timestamp en base64
-        const decoded = Buffer.from(token, 'base64').toString('utf8');
-        const [deviceId, timestamp] = decoded.split(':');
-        
-        // Vérifier si le deviceId est enregistré pour cet invité
+        const decoded = Buffer.from(token, "base64").toString("utf8");
+        const [deviceId] = decoded.split(":");
         if (invite.registeredDevice === deviceId) {
           isClientToken = true;
         }
       } catch (e) {
-        // Erreur de décodage, ce n'est pas un token client valide
-        console.log('Token client invalide:', e.message);
+        console.log("Token client invalide:", e.message);
       }
     }
 
-    // 3. Token normal (pour les liens partagés) - n'expire pas
-    const isNormalToken = hash === invite.tokenHash;
+    const isNormalToken = hash && invite.tokenHash && hash === invite.tokenHash;
 
     if (!isAdminToken && !isClientToken && !isNormalToken) {
       if (isEventPassed) {
@@ -306,8 +317,8 @@ export const downloadInvitationPdf = async (req, res) => {
       event: {
         name: eventData.name,
         date: eventData.date,
-        location: eventData.location
-      }
+        location: eventData.location,
+      },
     };
 
     const pdfBuffer = await generateInvitationPdf(pdfData);
