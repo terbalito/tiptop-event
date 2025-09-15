@@ -1,14 +1,20 @@
-// client/vite.config.js
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
   build: {
-    outDir: 'dist',  // ✅ Doit être 'dist' pour Render
-    sourcemap: false
+    outDir: 'dist',
+    sourcemap: false,
+    // ✅ Assurez-vous que les assets sont bien gérés
+    assetsDir: 'assets',
+    rollupOptions: {
+      output: {
+        assetFileNames: 'assets/[name]-[hash][extname]'
+      }
+    }
   },
-  base: '/',  // ✅ Base URL pour Render
+  base: '/',
   server: {
     proxy: {
       '/api': {
