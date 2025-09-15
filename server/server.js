@@ -139,36 +139,7 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-<<<<<<< HEAD
-// === FRONTEND en production ===
-const clientBuildPath = path.join(process.cwd(), "client", "dist");
-
-if (fs.existsSync(clientBuildPath)) {
-  app.use(express.static(clientBuildPath));
-
-  // Catch-all -> React Router
-  app.get("*", (req, res) => {
-    res.sendFile(path.join(clientBuildPath, "index.html"));
-  });
-}
-
-// Exemple routes auth
-app.post("/auth/login", (req, res) => {
-  res.json({ message: "Login OK" });
-});
-
-app.post("/auth/logout", (req, res) => {
-  res.json({ message: "Logout OK" });
-})
-
-
-// app.listen(PORT, () => {
-//   console.log(`✅ Server running on http://localhost:${PORT}`);
-// });
-=======
-// Démarrer le serveur
->>>>>>> 1d08b5c (Download but not top)
-server.listen(PORT, () => {
+app.listen(PORT, () => {
   console.log(`✅ Server running on http://localhost:${PORT}`);
   console.log(`📁 Generated files: ${generatedDir}`);
   console.log(`🌍 Allowed origins: ${allowedOrigins.join(', ')}`);
