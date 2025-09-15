@@ -2,5 +2,5 @@
 /dist
 
 # client/.gitignore
-dist/
+
 .env/
