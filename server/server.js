@@ -73,6 +73,32 @@ app.use("/api/events", eventRoutes);
 app.use("/api/invites", inviteRoutes);
 app.use("/api/controllers", controllerRoutes);
 
+// Ajoutez cette section APRès les routes API et AVANT les middlewares d'erreur
+
+// En production, servez les fichiers static du frontend
+if (process.env.NODE_ENV === 'production') {
+  const clientDistPath = path.join(process.cwd(), '..', 'client', 'dist');
+  
+  if (fs.existsSync(clientDistPath)) {
+    app.use(express.static(clientDistPath));
+    
+    // Route fallback pour le SPA
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(clientDistPath, 'index.html'));
+    });
+    
+    console.log('✅ Frontend production servi depuis:', clientDistPath);
+  } else {
+    console.log('⚠️  Dossier client/dist non trouvé');
+  }
+}
+
+// Middleware 404 (doit venir APRès la static)
+app.use(notFound);
+
+// Middleware de gestion d'erreurs
+app.use(errorHandler);
+
 // Dossier des fichiers générés
 const generatedDir = path.join(process.cwd(), "server", "generated");
 if (!fs.existsSync(generatedDir)) {
