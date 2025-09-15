@@ -101,6 +101,31 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-app.listen(PORT, () => {
+// === FRONTEND en production ===
+const clientBuildPath = path.join(process.cwd(), "client", "dist");
+
+if (fs.existsSync(clientBuildPath)) {
+  app.use(express.static(clientBuildPath));
+
+  // Catch-all -> React Router
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(clientBuildPath, "index.html"));
+  });
+}
+
+// Exemple routes auth
+app.post("/auth/login", (req, res) => {
+  res.json({ message: "Login OK" });
+});
+
+app.post("/auth/logout", (req, res) => {
+  res.json({ message: "Logout OK" });
+})
+
+
+// app.listen(PORT, () => {
+//   console.log(`✅ Server running on http://localhost:${PORT}`);
+// });
+server.listen(PORT, () => {
   console.log(`✅ Server running on http://localhost:${PORT}`);
 });

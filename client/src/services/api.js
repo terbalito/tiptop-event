@@ -1,8 +1,15 @@
 import axios from "axios";
 
 // Base URL dynamique selon l'environnement
-const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:4000/api";
+let BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:4000/api";
 
+// 🛠️ Correction : éviter le doublon "/api/api"
+if (BASE_URL.endsWith("/")) {
+  BASE_URL = BASE_URL.slice(0, -1); // retirer "/" final
+}
+if (!BASE_URL.endsWith("/api")) {
+  BASE_URL = BASE_URL + "/api"; // forcer "/api" une seule fois
+}
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -21,7 +28,6 @@ api.interceptors.response.use(
     return Promise.reject(err);
   }
 );
-
 
 // ========== AUTH ==========
 // Login via Firebase ID token
@@ -73,7 +79,7 @@ export const registerDeviceForInvite = async (eventId, inviteId, deviceId) =>
   api.post(`/invites/${eventId}/invites/${inviteId}/register`, { deviceId });
 
 export const downloadInvitationPdf = async (eventId, inviteId, token) =>
-  api.get(`/invites/${eventId}/${inviteId}/pdf?t=${token}`, { responseType: 'blob' });
+  api.get(`/invites/${eventId}/${inviteId}/pdf?t=${token}`, { responseType: "blob" });
 
 // ========== SCANS ==========
 export const scanInvite = async (eventId, inviteId) => {

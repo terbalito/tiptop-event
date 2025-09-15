@@ -107,7 +107,7 @@ const downloadPdf = (inviteId) => {
     return;
   }
 
-  const url = `${import.meta.env.VITE_API_URL}/api/invites/${selectedEvent}/${inviteId}/pdf?t=${token}`;
+  const url = `${import.meta.env.VITE_API_URL}/invites/${selectedEvent}/${inviteId}/pdf?t=${token}`;
   window.open(url, "_blank");
 };
 

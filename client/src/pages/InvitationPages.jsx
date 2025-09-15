@@ -143,7 +143,7 @@ export default function InvitationPage() {
           localStorage.setItem(`clientToken_${inviteId}`, newToken);
 
           setTimeout(() => {
-            const url = `${BACKEND_BASE}/api/invites/${invite.eventId}/${invite.id}/pdf?t=${newToken}`;
+            const url = `${BACKEND_BASE}/invites/${invite.eventId}/${invite.id}/pdf?t=${newToken}`;
             window.open(url, "_blank");
           }, 500);
         }
@@ -151,7 +151,7 @@ export default function InvitationPage() {
       return;
     }
 
-    const url = `${BACKEND_BASE}/api/invites/${invite.eventId}/${invite.id}/pdf?t=${token}`;
+    const url = `${BACKEND_BASE}/invites/${invite.eventId}/${invite.id}/pdf?t=${token}`;
     window.open(url, "_blank");
   };
 
