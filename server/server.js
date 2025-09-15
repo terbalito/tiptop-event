@@ -139,7 +139,8 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-app.listen(PORT, () => {
+// Démarrer le serveur
+server.listen(PORT, () => {
   console.log(`✅ Server running on http://localhost:${PORT}`);
   console.log(`📁 Generated files: ${generatedDir}`);
   console.log(`🌍 Allowed origins: ${allowedOrigins.join(', ')}`);

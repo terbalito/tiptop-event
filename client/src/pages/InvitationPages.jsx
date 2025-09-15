@@ -17,7 +17,6 @@ import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import CelebrationIcon from "@mui/icons-material/Celebration";
 import { fetchInviteById, registerDeviceForInvite } from "../services/api";
 
-const BACKEND_BASE = "http://localhost:4000";
 
 function generateDeviceId() {
   try {
@@ -165,27 +164,26 @@ const handleDownloadPdf = async () => {
     console.log('📄 Token pour PDF:', token);
 
     if (!token || token === "null") {
-      setSnackbar({ open: true, message: isAdminView ? "Token manquant pour le PDF" : "Préparation du téléchargement...", severity: "warning" });
-
-      if (!isAdminView) {
-        const deviceId = localStorage.getItem("deviceId_for_invite");
-        if (deviceId) {
-          const newToken = generateClientToken(deviceId);
-          setClientToken(newToken);
-          localStorage.setItem(`clientToken_${inviteId}`, newToken);
-
-          setTimeout(() => {
-            const url = `${BACKEND_BASE}/api/invites/${invite.eventId}/${invite.id}/pdf?t=${newToken}`;
-            window.open(url, "_blank");
-          }, 500);
-        }
-      }
+      setSnackbar({ open: true, message: "Token manquant", severity: "warning" });
       return;
     }
 
-    const url = `${BACKEND_BASE}/api/invites/${invite.eventId}/${invite.id}/pdf?t=${token}`;
-    window.open(url, "_blank");
-  };
+    const pdfUrl = `/api/invites/${invite.eventId}/${invite.id}/pdf?t=${token}`;
+    console.log('📄 URL PDF:', pdfUrl);
+    
+    // Créer un lien invisible pour forcer le téléchargement
+    const link = document.createElement('a');
+    link.href = pdfUrl;
+    link.download = `invitation_${invite.name.replace(/\s+/g, '_')}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+  } catch (error) {
+    console.error('❌ Erreur PDF:', error);
+    setSnackbar({ open: true, message: "Erreur téléchargement PDF", severity: "error" });
+  }
+};
 
   return (
     <Container maxWidth="sm" sx={{ py: 6 }}>
