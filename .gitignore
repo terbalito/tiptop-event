@@ -14,3 +14,6 @@
 
 # .gitignore
 server/config/serviceAccountKey.json
+
+# client/.gitignore
+dist/

@@ -33,13 +33,13 @@ const PORT = process.env.PORT || 4000;
 const server = http.createServer(app);
 const io = initSocket(server);
 
-// Domaines autorisés
+
 const allowedOrigins = [
   "http://localhost:5173",
-  "https://tiptop-event-1.onrender.com"
+  "https://tiptop-event-1.onrender.com",
+  "https://tiptop-events.onrender.com" // ← AJOUTEZ CETTE LIGNE
 ];
 
-// Middlewares
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin || allowedOrigins.includes(origin)) {
@@ -75,21 +75,19 @@ app.use("/api/controllers", controllerRoutes);
 
 // Ajoutez cette section APRès les routes API et AVANT les middlewares d'erreur
 
-// En production, servez les fichiers static du frontend
+// APRÈS les routes API, AVANT les middlewares d'erreur
 if (process.env.NODE_ENV === 'production') {
-  const clientDistPath = path.join(process.cwd(), '..', 'client', 'dist');
+  const clientPath = path.join(process.cwd(), '..', 'client', 'dist');
   
-  if (fs.existsSync(clientDistPath)) {
-    app.use(express.static(clientDistPath));
+  if (fs.existsSync(clientPath)) {
+    app.use(express.static(clientPath));
     
-    // Route fallback pour le SPA
+    // SPA routing
     app.get('*', (req, res) => {
-      res.sendFile(path.join(clientDistPath, 'index.html'));
+      res.sendFile(path.join(clientPath, 'index.html'));
     });
     
-    console.log('✅ Frontend production servi depuis:', clientDistPath);
-  } else {
-    console.log('⚠️  Dossier client/dist non trouvé');
+    console.log('✅ Serving frontend from:', clientPath);
   }
 }
 
