@@ -65,8 +65,9 @@ export const fetchInvitesCount = async (eventId) => {
   return data;
 };
 
+
 export const fetchInviteById = async (eventId, inviteId) => {
-  const { data } = await api.get(`/invites/${eventId}/invites/${inviteId}`);
+  const { data } = await api.get(`/invites/${eventId}/${inviteId}`);
   return data;
 };
 

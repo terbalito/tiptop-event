@@ -3,6 +3,24 @@ import fs from "fs";
 import path from "path";
 import PImage from "pureimage";
 import { Buffer } from "buffer";
+import { registerFont } from 'canvas';
+
+// Enregistrement des polices
+const fontsDir = path.join(process.cwd(), 'server', 'fonts');
+try {
+  registerFont(path.join(fontsDir, 'NotoSans-Bold.ttf'), { 
+    family: 'Noto Sans', 
+    weight: 'bold' 
+  });
+  
+  registerFont(path.join(fontsDir, 'NotoSans-Regular.ttf'), { 
+    family: 'Noto Sans', 
+    weight: 'normal' 
+  });
+  console.log('✅ Polices Noto Sans chargées avec succès');
+} catch (error) {
+  console.warn('⚠️ Impossible de charger les polices Noto Sans:', error.message);
+}
 
 const ensureDir = (dir) => {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
@@ -33,19 +51,15 @@ export const generateInvitationCard = async (eventId, guest, qrDataUrl, link) =>
     ctx.fillStyle = "#FFFFFF";
     ctx.fillRect(0, 0, width, height);
 
-    // Texte du nom
+    // Texte du nom - Utiliser Noto Sans ou fallback
     ctx.fillStyle = "#000000";
-    ctx.font = "48px Arial";
+    ctx.font = "48px 'Noto Sans', Arial, sans-serif";
     ctx.textAlign = "center";
     ctx.fillText(guest.name || "Invité", width / 2, 100);
 
     // Charger l'image QR depuis dataURL
     const qrBuffer = Buffer.from(qrDataUrl.split(",")[1], "base64");
     
-    // Pour PureImage, nous devons créer une image à partir du buffer
-    // Cette partie est un peu plus complexe, donc utilisons une approche différente
-    // Enregistrons d'abord le QR dans un fichier temporaire
-
     const tempQrPath = path.join(outDir, `temp_qr_${guest.id}.png`);
     fs.writeFileSync(tempQrPath, qrBuffer);
     
@@ -59,7 +73,7 @@ export const generateInvitationCard = async (eventId, guest, qrDataUrl, link) =>
     ctx.drawImage(qrImage, qrX, qrY, qrSize, qrSize);
 
     // Lien en bas
-    ctx.font = "16px Arial";
+    ctx.font = "16px 'Noto Sans', Arial, sans-serif";
     ctx.fillText(link, width / 2, height - 50);
 
     const filename = `invite_${sanitize(guest.name)}_${guest.id}.png`;
@@ -71,10 +85,11 @@ export const generateInvitationCard = async (eventId, guest, qrDataUrl, link) =>
     // Nettoyer le fichier temporaire
     fs.unlinkSync(tempQrPath);
 
+    console.log('✅ Carte PNG générée:', `/generated/${eventId}/${filename}`);
     return `/generated/${eventId}/${filename}`;
 
   } catch (error) {
-    console.error("Erreur dans generateInvitationCard:", error);
+    console.error("❌ Erreur dans generateInvitationCard:", error);
     throw error;
   }
 };

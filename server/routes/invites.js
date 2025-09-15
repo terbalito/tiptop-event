@@ -8,7 +8,8 @@ import {
   generateInvitations,
   getInviteById,
   registerDevice,
-  downloadInvitationPdf
+  downloadInvitationPdf,
+  downloadStoredPdf
 } from "../controllers/inviteController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 
@@ -17,6 +18,7 @@ const upload = multer({ dest: "server/uploads/" });
 
 // Upload Excel (protégé)
 router.post("/upload/:eventId", authMiddleware, upload.single("file"), uploadInvites);
+
 
 // Lister invités d'un event (protégé)
 router.get("/:eventId", authMiddleware, getInvitesByEvent);
@@ -28,11 +30,19 @@ router.get("/:eventId/count", authMiddleware, getInvitesCount);
 router.post("/:eventId/generate-cards", authMiddleware, generateInvitations);
 
 // PUBLIC : obtenir un invité par inviteId (pas besoin d'auth pour page publique)
-router.get("/:eventId/invites/:inviteId", getInviteById);
+// router.get("/:eventId/invites/:inviteId", getInviteById);
+
+// // Changez :
+// router.get('/:eventId/invites/:inviteId', getInviteById);
+
+// En :
+router.get('/:eventId/:inviteId', getInviteById);
 
 // PUBLIC : enregistrer deviceId (l'invité)
 router.post("/:eventId/invites/:inviteId/register", registerDevice);
 
 router.get("/:eventId/:inviteId/pdf", downloadInvitationPdf);
+
+router.get('/:eventId/:inviteId/pdf-file', downloadStoredPdf);
 
 export default router;

@@ -17,7 +17,10 @@ import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import CelebrationIcon from "@mui/icons-material/Celebration";
 import { fetchInviteById, registerDeviceForInvite } from "../services/api";
 
+<<<<<<< HEAD
 const BACKEND_BASE = import.meta.env.VITE_API_URL;
+=======
+>>>>>>> 1d08b5c (Download but not top)
 
 function generateDeviceId() {
   try {
@@ -42,19 +45,25 @@ export default function InvitationPage() {
   const isAdminView = searchParams.get("admin") === "true";
 
   useEffect(() => {
+
+  
+    console.log('🔍 Paramètres URL:', { eventId, inviteId, searchParams: Object.fromEntries(searchParams) });
+    
     const load = async () => {
-      setLoading(true);
-      setError(null);
-
       try {
+        console.log('🔄 Appel API pour:', { eventId, inviteId });
         const data = await fetchInviteById(eventId, inviteId);
-
-        if (!data) {
-          setError("Invitation introuvable");
-          return;
-        }
+        console.log('📦 Réponse API:', data);
 
         setInvite(data);
+
+              // ✅ AJOUTEZ ICI LE CONSOLE.LOG POUR DEBUGGER
+        console.log('📋 Données invité:', {
+          cardUrl: data.cardUrl,
+          eventId: data.eventId,
+          id: data.id,
+          link: data.link
+        });
 
         // Gestion des tokens pour les invités
         if (!isAdminView) {
@@ -79,14 +88,16 @@ export default function InvitationPage() {
         }
 
       } catch (err) {
-        console.error("Erreur fetchInviteById:", err);
-        setError("Impossible de charger l'invitation. Veuillez réessayer plus tard.");
+        console.error("Erreur détaillée:", err);
+        setError(err.message || "Erreur de chargement");
       } finally {
         setLoading(false);
       }
     };
 
     load();
+
+    
   }, [eventId, inviteId, searchParams, isAdminView]);
 
   // Affichage chargement
@@ -115,24 +126,49 @@ export default function InvitationPage() {
   const qrValue = invite.link || `${window.location.origin}/invite/${invite.id}`;
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrValue)}`;
 
-  const handleDownloadPng = () => {
+const handleDownloadPng = async () => {
+  try {
     if (!invite.cardUrl) {
       setSnackbar({ open: true, message: "Carte non générée encore", severity: "warning" });
       return;
     }
-    const url = `${BACKEND_BASE}${invite.cardUrl}`;
-    window.open(url, "_blank");
-  };
-
-  const handleDownloadPdf = () => {
+    
+    console.log('🖼️ Tentative téléchargement PNG:', invite.cardUrl);
+    
+    // Extraire le nom du fichier depuis cardUrl
+    const filename = invite.cardUrl.split('/').pop();
+    const eventId = invite.eventId;
+    
+    // URL de téléchargement qui force le download
+    const downloadUrl = `${window.location.origin}/api/download/${eventId}/${filename}`;
+    
+    console.log('🔗 URL téléchargement:', downloadUrl);
+    
+    // Créer un lien invisible pour forcer le téléchargement
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+  } catch (error) {
+    console.error('❌ Erreur PNG:', error);
+    setSnackbar({ open: true, message: "Erreur téléchargement PNG", severity: "error" });
+  }
+};
+const handleDownloadPdf = async () => {
+  try {
     if (isEventPassed) {
-      setSnackbar({ open: true, message: "L'événement est terminé, le téléchargement n'est plus disponible", severity: "warning" });
+      setSnackbar({ open: true, message: "L'événement est terminé", severity: "warning" });
       return;
     }
 
     const token = isAdminView ? searchParams.get("t") : clientToken;
+    console.log('📄 Token pour PDF:', token);
 
     if (!token || token === "null") {
+<<<<<<< HEAD
       setSnackbar({ open: true, message: isAdminView ? "Token manquant pour le PDF" : "Préparation du téléchargement...", severity: "warning" });
 
       if (!isAdminView) {
@@ -154,6 +190,28 @@ export default function InvitationPage() {
     const url = `${BACKEND_BASE}/invites/${invite.eventId}/${invite.id}/pdf?t=${token}`;
     window.open(url, "_blank");
   };
+=======
+      setSnackbar({ open: true, message: "Token manquant", severity: "warning" });
+      return;
+    }
+
+    const pdfUrl = `/api/invites/${invite.eventId}/${invite.id}/pdf?t=${token}`;
+    console.log('📄 URL PDF:', pdfUrl);
+    
+    // Créer un lien invisible pour forcer le téléchargement
+    const link = document.createElement('a');
+    link.href = pdfUrl;
+    link.download = `invitation_${invite.name.replace(/\s+/g, '_')}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+  } catch (error) {
+    console.error('❌ Erreur PDF:', error);
+    setSnackbar({ open: true, message: "Erreur téléchargement PDF", severity: "error" });
+  }
+};
+>>>>>>> 1d08b5c (Download but not top)
 
   return (
     <Container maxWidth="sm" sx={{ py: 6 }}>
