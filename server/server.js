@@ -77,13 +77,13 @@ app.use("/api/controllers", controllerRoutes);
 
 // APRÈS les routes API, AVANT les middlewares d'erreur
 if (process.env.NODE_ENV === 'production') {
-  const clientPath = path.join(process.cwd(), '..', 'client', 'dist');
+  const clientPath = path.join(process.cwd(), 'client', 'dist');
   
   if (fs.existsSync(clientPath)) {
     app.use(express.static(clientPath));
     
-    // SPA routing
-    app.get('*', (req, res) => {
+    // ✅ CORRIGEZ cette ligne :
+    app.get(/^\/(?!api).*/, (req, res) => {
       res.sendFile(path.join(clientPath, 'index.html'));
     });
     
