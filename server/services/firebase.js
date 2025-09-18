@@ -12,11 +12,15 @@ if (!admin.apps.length) {
 
   try {
     console.log("Décodage de la clé Firebase...");
-    const decoded = Buffer.from(serviceAccountBase64, "base64").toString("utf-8");
+    
+    // ✅ NETTOYEZ la chaîne Base64 (enlève les espaces, retours à la ligne)
+    const cleanBase64 = serviceAccountBase64.trim().replace(/\s+/g, '');
+    
+    const decoded = Buffer.from(cleanBase64, "base64").toString("utf-8");
 
     // Pour éviter d'afficher la clé complète, on ne montre que le début et la fin
-    console.log("Clé décodée (début) :", decoded.slice(0, 100), "...");
-    console.log("Clé décodée (fin) :", decoded.slice(-100));
+    console.log("Clé décodée (début) :", decoded.slice(0, 50), "...");
+    console.log("Clé décodée (fin) :", decoded.slice(-50));
 
     const serviceAccount = JSON.parse(decoded);
 
@@ -29,6 +33,7 @@ if (!admin.apps.length) {
     console.log("Firebase Admin initialisé ✅");
   } catch (err) {
     console.error("Erreur lors du décodage/parsing de FIREBASE_SERVICE_ACCOUNT :", err);
+    console.error("Base64 reçu:", serviceAccountBase64?.slice(0, 100), "...");
     throw err;
   }
 }
